@@ -1,0 +1,335 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Auth Models ───────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── User & Team Models ────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          String    @default("developer") // admin, project_manager, developer, tester, viewer
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts       Account[]
+  sessions       Session[]
+  teamMembers    TeamMember[]
+  assignedTasks  Task[]         @relation("TaskAssignee")
+  createdTasks   Task[]         @relation("TaskCreator")
+  comments       Comment[]
+  assignedIssues Issue[]        @relation("IssueAssignee")
+  createdIssues  Issue[]        @relation("IssueCreator")
+  notifications  Notification[]
+  auditLogs      AuditLog[]
+  activities     Activity[]
+}
+
+model Team {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members  TeamMember[]
+  projects Project[]
+}
+
+model TeamMember {
+  id     String @id @default(cuid())
+  role   String @default("developer")
+  userId String
+  teamId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId])
+}
+
+// ─── Project Models ────────────────────────────────────────
+
+model Project {
+  id          String   @id @default(cuid())
+  name        String
+  key         String   @unique
+  description String?
+  status      String   @default("active") // active, archived, completed
+  startDate   DateTime?
+  endDate     DateTime?
+  teamId      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  team       Team?       @relation(fields: [teamId], references: [id])
+  sprints    Sprint[]
+  tasks      Task[]
+  issues     Issue[]
+  pipelines  Pipeline[]
+  milestones Milestone[]
+  gitRepos   GitRepo[]
+  activities Activity[]
+  labels     Label[]
+}
+
+model Sprint {
+  id        String    @id @default(cuid())
+  name      String
+  goal      String?
+  status    String    @default("planning") // planning, active, completed
+  startDate DateTime?
+  endDate   DateTime?
+  projectId String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks   Task[]
+}
+
+model Milestone {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  dueDate     DateTime?
+  status      String    @default("open") // open, closed
+  projectId   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks   Task[]
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  status      String    @default("todo") // todo, in_progress, in_review, done
+  priority    String    @default("medium") // low, medium, high, critical
+  type        String    @default("task") // task, story, bug, epic
+  storyPoints Int?
+  dueDate     DateTime?
+  position    Int       @default(0)
+  projectId   String
+  sprintId    String?
+  milestoneId String?
+  assigneeId  String?
+  creatorId   String
+  parentId    String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sprint    Sprint?    @relation(fields: [sprintId], references: [id])
+  milestone Milestone? @relation(fields: [milestoneId], references: [id])
+  assignee  User?      @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  creator   User       @relation("TaskCreator", fields: [creatorId], references: [id])
+  parent    Task?      @relation("SubTasks", fields: [parentId], references: [id])
+  subtasks  Task[]     @relation("SubTasks")
+  comments  Comment[]
+  labels    TaskLabel[]
+}
+
+model Label {
+  id        String @id @default(cuid())
+  name      String
+  color     String @default("#6366f1")
+  projectId String
+
+  project Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks   TaskLabel[]
+
+  @@unique([name, projectId])
+}
+
+model TaskLabel {
+  taskId  String
+  labelId String
+
+  task  Task  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  label Label @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, labelId])
+}
+
+// ─── Issue Tracking ────────────────────────────────────────
+
+model Issue {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  status      String    @default("open") // open, in_progress, resolved, closed
+  severity    String    @default("medium") // low, medium, high, critical
+  type        String    @default("bug") // bug, feature, improvement, task
+  reproSteps  String?
+  projectId   String
+  assigneeId  String?
+  creatorId   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee User?     @relation("IssueAssignee", fields: [assigneeId], references: [id])
+  creator  User      @relation("IssueCreator", fields: [creatorId], references: [id])
+  comments Comment[]
+}
+
+// ─── Comments ──────────────────────────────────────────────
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  authorId  String
+  taskId    String?
+  issueId   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  task   Task?  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  issue  Issue? @relation(fields: [issueId], references: [id], onDelete: Cascade)
+}
+
+// ─── CI/CD Pipeline ────────────────────────────────────────
+
+model Pipeline {
+  id        String   @id @default(cuid())
+  name      String
+  status    String   @default("idle") // idle, running, success, failed
+  config    String?  // YAML config stored as text
+  projectId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  runs    PipelineRun[]
+  stages  PipelineStage[]
+}
+
+model PipelineStage {
+  id         String @id @default(cuid())
+  name       String
+  order      Int
+  pipelineId String
+
+  pipeline Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+}
+
+model PipelineRun {
+  id         String    @id @default(cuid())
+  status     String    @default("pending") // pending, running, success, failed, cancelled
+  branch     String?
+  commitSha  String?
+  logs       String?
+  startedAt  DateTime?
+  finishedAt DateTime?
+  pipelineId String
+  createdAt  DateTime  @default(now())
+
+  pipeline Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+}
+
+// ─── Git Integration ───────────────────────────────────────
+
+model GitRepo {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  provider  String   @default("github") // github, gitlab
+  projectId String
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+// ─── Notifications ─────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String   // task_assigned, comment_added, sprint_started, etc.
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  userId    String
+  link      String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Activity & Audit ──────────────────────────────────────
+
+model Activity {
+  id        String   @id @default(cuid())
+  type      String   // created, updated, deleted, commented, etc.
+  entity    String   // task, issue, project, sprint, etc.
+  entityId  String
+  details   String?
+  userId    String
+  projectId String?
+  createdAt DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  entity    String
+  entityId  String
+  before    String?
+  after     String?
+  userId    String
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
