@@ -18,13 +18,11 @@ src/
 ├── hooks/                 # Custom React hooks
 ├── lib/                   # Utilities, helpers, and server-side config
 ├── store/                 # Zustand global state stores
-├── test/                  # Test setup and config
 └── types/                 # Shared TypeScript types, interfaces, and enums
 ```
 
 **Rules:**
 - One component per file. Name the file after the component in kebab-case.
-- Colocate tests in `__tests__/` directories next to the code they test.
 - Keep API route files focused — one resource per directory.
 - UI primitives go in `components/ui/`. Page-specific components stay in the page file unless they're reused.
 
@@ -328,20 +326,9 @@ const skip = (params.page - 1) * params.pageSize; // zero-indexed offset for Pri
 
 ---
 
-## Testing
-
-- **Framework:** Vitest with `@testing-library/react` and `jsdom`.
-- Test utilities and pure functions with unit tests.
-- Test Zustand stores for state transitions.
-- Test Zod schemas for validation rules and edge cases.
-- Place test files in `__tests__/` directories next to the source.
-- Name test files `{module}.test.ts` or `{module}.test.tsx`.
-
----
-
 ## Git & Workflow
 
 - Branch names: `feature/{description}`, `fix/{description}`, `refactor/{description}`.
 - Commit messages: imperative mood, concise. Example: `feat: add pagination to all list endpoints`.
 - Keep commits focused — one logical change per commit.
-- Run `npm run build` and `npm run test` before pushing.
+- Run `npm run build` before pushing.
