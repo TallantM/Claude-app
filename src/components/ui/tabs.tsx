@@ -4,6 +4,10 @@ import * as React from "react";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 import { cn } from "@/lib/utils";
 
+/**
+ * Tabbed navigation built on Radix Tabs.
+ * Compose with TabsList, TabsTrigger, and TabsContent.
+ */
 const Tabs = TabsPrimitive.Root;
 
 const TabsList = React.forwardRef<

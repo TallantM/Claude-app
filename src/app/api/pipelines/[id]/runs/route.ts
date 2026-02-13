@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { parsePaginationParams, getPrismaPageArgs, buildPaginatedResponse } from "@/lib/pagination";
 
 export async function GET(
   request: Request,
@@ -15,12 +16,20 @@ export async function GET(
       return NextResponse.json({ error: "Pipeline not found" }, { status: 404 });
     }
 
-    const runs = await prisma.pipelineRun.findMany({
-      where: { pipelineId: id },
-      orderBy: { createdAt: "desc" },
-    });
+    const { searchParams } = new URL(request.url);
+    const paginationParams = parsePaginationParams(searchParams);
+    const where = { pipelineId: id };
 
-    return NextResponse.json(runs);
+    const [total, runs] = await Promise.all([
+      prisma.pipelineRun.count({ where }),
+      prisma.pipelineRun.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        ...getPrismaPageArgs(paginationParams),
+      }),
+    ]);
+
+    return NextResponse.json(buildPaginatedResponse(runs, total, paginationParams));
   } catch (error) {
     console.error("Error fetching pipeline runs:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

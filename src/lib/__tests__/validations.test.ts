@@ -1,3 +1,6 @@
+// Tests for Zod validation schemas — ensures form inputs are correctly validated
+// before hitting the API layer.
+
 import { describe, it, expect } from "vitest";
 import {
   loginSchema,
@@ -8,6 +11,8 @@ import {
   sprintSchema,
   commentSchema,
 } from "@/lib/validations";
+
+// ─── Auth Schemas ───
 
 describe("loginSchema", () => {
   it("validates correct input", () => {
@@ -66,6 +71,8 @@ describe("registerSchema", () => {
     expect(result.success).toBe(false);
   });
 });
+
+// ─── Entity Schemas ───
 
 describe("projectSchema", () => {
   it("validates correct input", () => {

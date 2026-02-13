@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import type { NotificationType } from "@/types";
 
+// ─── Sidebar Store ─────────────────────────────────────────
+
 interface SidebarState {
   isOpen: boolean;
   toggle: () => void;
@@ -8,12 +10,15 @@ interface SidebarState {
   open: () => void;
 }
 
+/** Controls the collapsible sidebar. Persists across page navigations. */
 export const useSidebarStore = create<SidebarState>((set) => ({
   isOpen: true,
   toggle: () => set((state) => ({ isOpen: !state.isOpen })),
   close: () => set({ isOpen: false }),
   open: () => set({ isOpen: true }),
 }));
+
+// ─── Notification Store ────────────────────────────────────
 
 interface NotificationState {
   notifications: NotificationType[];
@@ -24,12 +29,14 @@ interface NotificationState {
   addNotification: (notification: NotificationType) => void;
 }
 
+/** Global notification state shared between the header bell icon and the notifications page. */
 export const useNotificationStore = create<NotificationState>((set) => ({
   notifications: [],
   unreadCount: 0,
   setNotifications: (notifications) =>
     set({
       notifications,
+      // Recompute unread count whenever the full list is replaced
       unreadCount: notifications.filter((n) => !n.read).length,
     }),
   markAsRead: (id) =>
@@ -54,6 +61,8 @@ export const useNotificationStore = create<NotificationState>((set) => ({
     })),
 }));
 
+// ─── Project Filter Store ──────────────────────────────────
+
 interface ProjectFilterState {
   search: string;
   status: string;
@@ -62,6 +71,7 @@ interface ProjectFilterState {
   reset: () => void;
 }
 
+/** Stores project list filters so they survive navigation between pages. */
 export const useProjectFilterStore = create<ProjectFilterState>((set) => ({
   search: "",
   status: "all",

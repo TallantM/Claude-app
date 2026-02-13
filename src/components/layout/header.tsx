@@ -27,6 +27,10 @@ import { useSidebarStore, useNotificationStore } from "@/store";
 import { getInitials } from "@/lib/utils";
 import Link from "next/link";
 
+/**
+ * Sticky top bar with global search, theme toggle, notification bell, and user menu.
+ * Includes a hamburger button on mobile to open the sidebar.
+ */
 export function Header() {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
@@ -71,6 +75,7 @@ export function Header() {
         <Link href="/notifications">
           <Button variant="ghost" size="icon" className="relative" aria-label="Notifications">
             <Bell className="h-5 w-5" />
+            {/* Red badge — caps at "9+" to keep the circle from getting too wide */}
             {unreadCount > 0 && (
               <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
                 {unreadCount > 9 ? "9+" : unreadCount}

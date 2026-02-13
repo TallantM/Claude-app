@@ -13,6 +13,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { loginSchema, type LoginInput } from "@/lib/validations";
 
+// ─── Main Page ───
+
 export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +44,7 @@ export default function LoginPage() {
       setError("Invalid email or password");
     } else {
       router.push("/dashboard");
-      router.refresh();
+      router.refresh(); // Force server components to re-render with the new session
     }
   };
 
@@ -95,6 +97,7 @@ export default function LoginPage() {
             </Button>
           </form>
 
+          {/* ─── OAuth Divider ─── */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
               <span className="w-full border-t" />
@@ -104,6 +107,7 @@ export default function LoginPage() {
             </div>
           </div>
 
+          {/* ─── Social Login Buttons ─── */}
           <div className="grid grid-cols-2 gap-4">
             <Button variant="outline" onClick={() => signIn("github", { callbackUrl: "/dashboard" })}>
               <Github className="mr-2 h-4 w-4" /> GitHub

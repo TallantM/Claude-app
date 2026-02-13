@@ -22,6 +22,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useSidebarStore } from "@/store";
 import { Separator } from "@/components/ui/separator";
 
+// ─── Navigation Config ───
+
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Projects", href: "/projects", icon: FolderKanban },
@@ -37,6 +39,10 @@ const bottomNav = [
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
+/**
+ * Collapsible sidebar that switches between full labels and icon-only mode.
+ * When collapsed, nav items show tooltips on hover so the user can still tell what's what.
+ */
 export function Sidebar() {
   const pathname = usePathname();
   const { isOpen, toggle } = useSidebarStore();
@@ -78,6 +84,7 @@ export function Sidebar() {
             </Link>
           );
 
+          // In collapsed mode, wrap each link in a tooltip so the label is still accessible
           if (!isOpen) {
             return (
               <Tooltip key={item.name}>
@@ -93,7 +100,7 @@ export function Sidebar() {
 
       <Separator />
 
-      {/* Bottom nav */}
+      {/* Bottom nav — settings and similar less-frequent items */}
       <div className="p-2">
         {bottomNav.map((item) => {
           const isActive = pathname.startsWith(item.href);

@@ -3,6 +3,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
+/** Styled text input with consistent focus ring and disabled states across the app. */
 const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(
   ({ className, type, ...props }, ref) => {
     return (

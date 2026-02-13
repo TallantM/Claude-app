@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { commentSchema } from "@/lib/validations";
+import { parsePaginationParams, getPrismaPageArgs, buildPaginatedResponse } from "@/lib/pagination";
 import { z } from "zod";
 
 export async function GET(request: Request) {
@@ -22,17 +23,22 @@ export async function GET(request: Request) {
     if (taskId) where.taskId = taskId.trim();
     if (issueId) where.issueId = issueId.trim();
 
-    const comments = await prisma.comment.findMany({
-      where,
-      include: {
-        author: {
-          select: { id: true, name: true, email: true, image: true },
+    const paginationParams = parsePaginationParams(searchParams);
+    const [total, comments] = await Promise.all([
+      prisma.comment.count({ where }),
+      prisma.comment.findMany({
+        where,
+        include: {
+          author: {
+            select: { id: true, name: true, email: true, image: true },
+          },
         },
-      },
-      orderBy: { createdAt: "asc" },
-    });
+        orderBy: { createdAt: "asc" },
+        ...getPrismaPageArgs(paginationParams),
+      }),
+    ]);
 
-    return NextResponse.json(comments);
+    return NextResponse.json(buildPaginatedResponse(comments, total, paginationParams));
   } catch (error) {
     console.error("Error fetching comments:", error);
     return NextResponse.json(

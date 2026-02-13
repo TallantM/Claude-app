@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sprintSchema } from "@/lib/validations";
+import { parsePaginationParams, getPrismaPageArgs, buildPaginatedResponse } from "@/lib/pagination";
 import { z } from "zod";
 
 export async function GET(request: Request) {
@@ -17,15 +18,21 @@ export async function GET(request: Request) {
       );
     }
 
-    const sprints = await prisma.sprint.findMany({
-      where: { projectId: projectId.trim() },
-      include: {
-        _count: {
-          select: { tasks: true },
+    const where = { projectId: projectId.trim() };
+    const paginationParams = parsePaginationParams(searchParams);
+    const [total, sprints] = await Promise.all([
+      prisma.sprint.count({ where }),
+      prisma.sprint.findMany({
+        where,
+        include: {
+          _count: {
+            select: { tasks: true },
+          },
         },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+        orderBy: { createdAt: "desc" },
+        ...getPrismaPageArgs(paginationParams),
+      }),
+    ]);
 
     const result = sprints.map((sprint) => ({
       ...sprint,
@@ -33,7 +40,7 @@ export async function GET(request: Request) {
       _count: undefined,
     }));
 
-    return NextResponse.json(result);
+    return NextResponse.json(buildPaginatedResponse(result, total, paginationParams));
   } catch (error) {
     console.error("Error fetching sprints:", error);
     return NextResponse.json(

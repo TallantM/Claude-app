@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { projectSchema } from "@/lib/validations";
+import { parsePaginationParams, getPrismaPageArgs, buildPaginatedResponse } from "@/lib/pagination";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 
@@ -27,23 +28,28 @@ export async function GET(request: Request) {
       ];
     }
 
-    const projects = await prisma.project.findMany({
-      where,
-      include: {
-        team: {
-          select: { name: true },
-        },
-        _count: {
-          select: {
-            tasks: true,
-            issues: {
-              where: { status: { in: ["open", "in_progress"] } },
+    const paginationParams = parsePaginationParams(searchParams);
+    const [total, projects] = await Promise.all([
+      prisma.project.count({ where }),
+      prisma.project.findMany({
+        where,
+        include: {
+          team: {
+            select: { name: true },
+          },
+          _count: {
+            select: {
+              tasks: true,
+              issues: {
+                where: { status: { in: ["open", "in_progress"] } },
+              },
             },
           },
         },
-      },
-      orderBy: { updatedAt: "desc" },
-    });
+        orderBy: { updatedAt: "desc" },
+        ...getPrismaPageArgs(paginationParams),
+      }),
+    ]);
 
     const result = projects.map((project) => ({
       id: project.id,
@@ -61,7 +67,7 @@ export async function GET(request: Request) {
       teamName: project.team?.name ?? null,
     }));
 
-    return NextResponse.json(result);
+    return NextResponse.json(buildPaginatedResponse(result, total, paginationParams));
   } catch (error) {
     console.error("Error fetching projects:", error);
     return NextResponse.json(

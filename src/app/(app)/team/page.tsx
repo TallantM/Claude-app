@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Users,
   Plus,
@@ -33,6 +33,8 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getInitials } from "@/lib/utils";
+import { usePagination } from "@/hooks/use-pagination";
+import { Pagination } from "@/components/ui/pagination";
 
 interface TeamUser {
   id: string;
@@ -56,21 +58,22 @@ const avatarColors = [
 ];
 
 export default function TeamPage() {
-  const [users, setUsers] = useState<TeamUser[]>([]);
-  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [inviteName, setInviteName] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState("developer");
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetch("/api/team")
-      .then((r) => r.json())
-      .then((data) => setUsers(data.data || []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+  const {
+    data: users,
+    pagination,
+    loading,
+    setPage,
+    setPageSize,
+    refetch,
+  } = usePagination<TeamUser>({
+    url: "/api/team",
+  });
 
   const handleInvite = async () => {
     if (!inviteName || !inviteEmail) return;
@@ -85,8 +88,7 @@ export default function TeamPage() {
         setDialogOpen(false);
         setInviteName("");
         setInviteEmail("");
-        const refreshed = await fetch("/api/team").then((r) => r.json());
-        setUsers(refreshed.data || []);
+        refetch();
       }
     } catch {
       // ignore
@@ -168,6 +170,15 @@ export default function TeamPage() {
             );
           })}
         </div>
+      )}
+
+      {/* Pagination */}
+      {pagination && (
+        <Pagination
+          pagination={pagination}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
       )}
 
       {/* Invite Dialog */}

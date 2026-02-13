@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Bell,
   CheckSquare,
@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn, formatRelativeTime } from "@/lib/utils";
+import { usePagination } from "@/hooks/use-pagination";
+import { Pagination } from "@/components/ui/pagination";
 
 interface Notification {
   id: string;
@@ -35,20 +37,18 @@ const typeIcons: Record<string, React.ElementType> = {
 };
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    data: notifications,
+    pagination,
+    loading,
+    setPage,
+    setPageSize,
+  } = usePagination<Notification>({
+    url: "/api/notifications",
+  });
 
-  const fetchNotifications = () => {
-    fetch("/api/notifications")
-      .then((r) => r.json())
-      .then((data) => setNotifications(data.data || []))
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    fetchNotifications();
-  }, []);
+  // Local optimistic state for read status
+  const [readIds, setReadIds] = useState<Set<string>>(new Set());
 
   const markAsRead = async (id: string) => {
     await fetch("/api/notifications", {
@@ -56,9 +56,7 @@ export default function NotificationsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ids: [id] }),
     });
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-    );
+    setReadIds((prev) => new Set(prev).add(id));
   };
 
   const markAllAsRead = async () => {
@@ -67,10 +65,11 @@ export default function NotificationsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ all: true }),
     });
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    setReadIds(new Set(notifications.map((n) => n.id)));
   };
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const isRead = (n: Notification) => n.read || readIds.has(n.id);
+  const unreadCount = notifications.filter((n) => !isRead(n)).length;
 
   return (
     <div className="space-y-6">
@@ -113,15 +112,15 @@ export default function NotificationsPage() {
                 key={notification.id}
                 className={cn(
                   "flex cursor-pointer items-start gap-4 rounded-lg border p-4 transition-colors hover:bg-muted/50",
-                  !notification.read && "border-l-4 border-l-primary bg-primary/5"
+                  !isRead(notification) && "border-l-4 border-l-primary bg-primary/5"
                 )}
                 onClick={() => {
-                  if (!notification.read) markAsRead(notification.id);
+                  if (!isRead(notification)) markAsRead(notification.id);
                 }}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter" && !notification.read) markAsRead(notification.id);
+                  if (e.key === "Enter" && !isRead(notification)) markAsRead(notification.id);
                 }}
               >
                 <div className={cn(
@@ -133,7 +132,7 @@ export default function NotificationsPage() {
                   <Icon className="h-4 w-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className={cn("text-sm", !notification.read && "font-semibold")}>
+                  <p className={cn("text-sm", !isRead(notification) && "font-semibold")}>
                     {notification.title}
                   </p>
                   <p className="text-sm text-muted-foreground line-clamp-1">
@@ -147,6 +146,15 @@ export default function NotificationsPage() {
             );
           })}
         </div>
+      )}
+
+      {/* Pagination */}
+      {pagination && (
+        <Pagination
+          pagination={pagination}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
       )}
     </div>
   );

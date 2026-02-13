@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { issueSchema } from "@/lib/validations";
+import { parsePaginationParams, getPrismaPageArgs, buildPaginatedResponse } from "@/lib/pagination";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 
@@ -19,20 +20,25 @@ export async function GET(request: Request) {
     if (status) where.status = status.trim();
     if (severity) where.severity = severity.trim();
 
-    const issues = await prisma.issue.findMany({
-      where,
-      include: {
-        assignee: {
-          select: { id: true, name: true, email: true, image: true },
+    const paginationParams = parsePaginationParams(searchParams);
+    const [total, issues] = await Promise.all([
+      prisma.issue.count({ where }),
+      prisma.issue.findMany({
+        where,
+        include: {
+          assignee: {
+            select: { id: true, name: true, email: true, image: true },
+          },
+          creator: {
+            select: { id: true, name: true, email: true, image: true },
+          },
         },
-        creator: {
-          select: { id: true, name: true, email: true, image: true },
-        },
-      },
-      orderBy: { updatedAt: "desc" },
-    });
+        orderBy: { updatedAt: "desc" },
+        ...getPrismaPageArgs(paginationParams),
+      }),
+    ]);
 
-    return NextResponse.json(issues);
+    return NextResponse.json(buildPaginatedResponse(issues, total, paginationParams));
   } catch (error) {
     console.error("Error fetching issues:", error);
     return NextResponse.json(

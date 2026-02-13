@@ -1,6 +1,10 @@
+// Tests for Zustand stores — verifies state transitions and derived values (e.g. unread count).
+
 import { describe, it, expect, beforeEach } from "vitest";
 import { useSidebarStore, useNotificationStore, useProjectFilterStore } from "@/store";
 import type { NotificationType } from "@/types";
+
+// ─── Sidebar ───
 
 describe("useSidebarStore", () => {
   beforeEach(() => {
@@ -29,6 +33,8 @@ describe("useSidebarStore", () => {
     expect(useSidebarStore.getState().isOpen).toBe(true);
   });
 });
+
+// ─── Notifications ───
 
 describe("useNotificationStore", () => {
   const mockNotifications: NotificationType[] = [
@@ -74,6 +80,8 @@ describe("useNotificationStore", () => {
     expect(useNotificationStore.getState().unreadCount).toBe(1);
   });
 });
+
+// ─── Project Filters ───
 
 describe("useProjectFilterStore", () => {
   beforeEach(() => {

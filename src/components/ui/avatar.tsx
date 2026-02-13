@@ -4,6 +4,10 @@ import * as React from "react";
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
 import { cn } from "@/lib/utils";
 
+/**
+ * Circular avatar with an image source and a fallback (initials, icon, etc.)
+ * when the image fails to load. Compose with AvatarImage + AvatarFallback.
+ */
 const Avatar = React.forwardRef<
   React.ComponentRef<typeof AvatarPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>

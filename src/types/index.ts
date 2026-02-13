@@ -1,5 +1,15 @@
+// ─── Pagination ───────────────────────────────────────────
+
+export type {
+  PaginationParams,
+  PaginationMeta,
+  PaginatedResponse,
+} from "./pagination";
+export { PAGINATION_DEFAULTS, PAGE_SIZE_OPTIONS } from "./pagination";
+
 // ─── User Roles ────────────────────────────────────────────
 
+/** Determines what a user can access and modify across the app. */
 export enum UserRole {
   ADMIN = "admin",
   PROJECT_MANAGER = "project_manager",
@@ -10,6 +20,7 @@ export enum UserRole {
 
 // ─── Task Types ────────────────────────────────────────────
 
+/** Kanban-style workflow states for tasks. */
 export enum TaskStatus {
   TODO = "todo",
   IN_PROGRESS = "in_progress",
@@ -17,6 +28,7 @@ export enum TaskStatus {
   DONE = "done",
 }
 
+/** Urgency levels used for sorting and visual indicators on tasks. */
 export enum TaskPriority {
   LOW = "low",
   MEDIUM = "medium",
@@ -24,6 +36,7 @@ export enum TaskPriority {
   CRITICAL = "critical",
 }
 
+/** Categorizes what kind of work a task represents. */
 export enum TaskType {
   TASK = "task",
   STORY = "story",
@@ -33,6 +46,7 @@ export enum TaskType {
 
 // ─── Issue Types ───────────────────────────────────────────
 
+/** Lifecycle states for bug reports and issues. */
 export enum IssueStatus {
   OPEN = "open",
   IN_PROGRESS = "in_progress",
@@ -40,6 +54,7 @@ export enum IssueStatus {
   CLOSED = "closed",
 }
 
+/** How badly the issue affects users or the system. */
 export enum IssueSeverity {
   LOW = "low",
   MEDIUM = "medium",
@@ -49,6 +64,7 @@ export enum IssueSeverity {
 
 // ─── Pipeline Types ────────────────────────────────────────
 
+/** Overall state of a CI/CD pipeline. */
 export enum PipelineStatus {
   IDLE = "idle",
   RUNNING = "running",
@@ -56,6 +72,7 @@ export enum PipelineStatus {
   FAILED = "failed",
 }
 
+/** State of an individual pipeline run (more granular than PipelineStatus). */
 export enum PipelineRunStatus {
   PENDING = "pending",
   RUNNING = "running",
@@ -66,6 +83,7 @@ export enum PipelineRunStatus {
 
 // ─── Sprint Types ──────────────────────────────────────────
 
+/** Tracks whether a sprint is being planned, actively worked, or wrapped up. */
 export enum SprintStatus {
   PLANNING = "planning",
   ACTIVE = "active",
@@ -74,6 +92,7 @@ export enum SprintStatus {
 
 // ─── Project Types ─────────────────────────────────────────
 
+/** High-level project lifecycle state. */
 export enum ProjectStatus {
   ACTIVE = "active",
   ARCHIVED = "archived",
@@ -82,6 +101,7 @@ export enum ProjectStatus {
 
 // ─── Interfaces ────────────────────────────────────────────
 
+/** Lightweight user info used in avatars, dropdowns, and assignee fields. */
 export interface UserProfile {
   id: string;
   name: string | null;
@@ -90,6 +110,7 @@ export interface UserProfile {
   role: string;
 }
 
+/** Project card data shown in the projects list view. */
 export interface ProjectSummary {
   id: string;
   name: string;
@@ -101,6 +122,7 @@ export interface ProjectSummary {
   teamName: string | null;
 }
 
+/** A task with all its related data — assignee, labels, counts, etc. */
 export interface TaskWithRelations {
   id: string;
   title: string;
@@ -124,6 +146,7 @@ export interface TaskWithRelations {
   _count?: { subtasks: number; comments: number };
 }
 
+/** A sprint along with the tasks assigned to it. */
 export interface SprintWithTasks {
   id: string;
   name: string;
@@ -134,12 +157,14 @@ export interface SprintWithTasks {
   tasks: TaskWithRelations[];
 }
 
+/** Represents one column on the Kanban board. */
 export interface KanbanColumn {
   id: TaskStatus;
   title: string;
   tasks: TaskWithRelations[];
 }
 
+/** Aggregate numbers for the dashboard overview cards. */
 export interface DashboardStats {
   totalProjects: number;
   totalTasks: number;
@@ -149,11 +174,13 @@ export interface DashboardStats {
   teamMembers: number;
 }
 
+/** Generic label + value pair used by charts. */
 export interface ChartDataPoint {
   label: string;
   value: number;
 }
 
+/** Shape of a notification from the API. */
 export interface NotificationType {
   id: string;
   type: string;
@@ -164,6 +191,7 @@ export interface NotificationType {
   createdAt: string;
 }
 
+/** An activity feed entry tied to a specific entity (task, project, etc.). */
 export interface ActivityType {
   id: string;
   type: string;
@@ -177,6 +205,7 @@ export interface ActivityType {
 
 // ─── API Response Types ────────────────────────────────────
 
+/** Standard wrapper for API responses that may include data, an error, or both. */
 export interface ApiResponse<T> {
   data?: T;
   error?: string;
@@ -184,6 +213,7 @@ export interface ApiResponse<T> {
 }
 
 // ─── NextAuth Extensions ───────────────────────────────────
+// Augment the default NextAuth types so `session.user` includes our custom fields.
 
 declare module "next-auth" {
   interface Session {

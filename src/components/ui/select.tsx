@@ -5,10 +5,13 @@ import * as SelectPrimitive from "@radix-ui/react-select";
 import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// ─── Base Primitives ───
+
 const Select = SelectPrimitive.Root;
 const SelectGroup = SelectPrimitive.Group;
 const SelectValue = SelectPrimitive.Value;
 
+/** Styled select dropdown with keyboard navigation and accessible markup. */
 const SelectTrigger = React.forwardRef<
   React.ComponentRef<typeof SelectPrimitive.Trigger>,
   React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>

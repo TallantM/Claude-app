@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { parsePaginationParams, getPrismaPageArgs, buildPaginatedResponse } from "@/lib/pagination";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -13,12 +14,20 @@ export async function GET() {
       );
     }
 
-    const notifications = await prisma.notification.findMany({
-      where: { userId: session.user.id },
-      orderBy: { createdAt: "desc" },
-    });
+    const { searchParams } = new URL(request.url);
+    const paginationParams = parsePaginationParams(searchParams);
+    const where = { userId: session.user.id };
 
-    return NextResponse.json(notifications);
+    const [total, notifications] = await Promise.all([
+      prisma.notification.count({ where }),
+      prisma.notification.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        ...getPrismaPageArgs(paginationParams),
+      }),
+    ]);
+
+    return NextResponse.json(buildPaginatedResponse(notifications, total, paginationParams));
   } catch (error) {
     console.error("Error fetching notifications:", error);
     return NextResponse.json(

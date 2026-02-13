@@ -1,10 +1,17 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+/**
+ * Merge Tailwind classes with proper precedence handling.
+ * Wraps clsx + tailwind-merge so conflicting utilities resolve correctly.
+ */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * Format a date into a short, human-readable string like "Jan 5, 2025".
+ */
 export function formatDate(date: Date | string): string {
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
@@ -13,6 +20,10 @@ export function formatDate(date: Date | string): string {
   }).format(new Date(date));
 }
 
+/**
+ * Turn a date into a relative time string ("3h ago", "2d ago").
+ * Falls back to formatDate once we're past a week.
+ */
 export function formatRelativeTime(date: Date | string): string {
   const now = new Date();
   const then = new Date(date);
@@ -28,6 +39,10 @@ export function formatRelativeTime(date: Date | string): string {
   return formatDate(date);
 }
 
+/**
+ * Derive a short project key from a name (e.g. "My Project" -> "MYPROJ").
+ * Strips non-alphanumeric chars and caps at 6 characters.
+ */
 export function generateKey(name: string): string {
   return name
     .toUpperCase()
@@ -35,6 +50,9 @@ export function generateKey(name: string): string {
     .slice(0, 6);
 }
 
+/**
+ * Pull the first letter of each word for avatar fallbacks ("Jane Doe" -> "JD").
+ */
 export function getInitials(name: string): string {
   return name
     .split(" ")
@@ -44,6 +62,14 @@ export function getInitials(name: string): string {
     .slice(0, 2);
 }
 
+// ─── Color Mapping Helpers ─────────────────────────────────
+// These return Tailwind class strings for badges and chips.
+// Each one covers both light and dark mode variants.
+
+/**
+ * Badge classes for workflow statuses (task, issue, sprint, pipeline, etc.).
+ * Handles every status value across all entity types.
+ */
 export function getStatusColor(status: string): string {
   const colors: Record<string, string> = {
     todo: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
@@ -67,6 +93,9 @@ export function getStatusColor(status: string): string {
   return colors[status] || "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
 }
 
+/**
+ * Text color classes for priority indicators (low through critical).
+ */
 export function getPriorityColor(priority: string): string {
   const colors: Record<string, string> = {
     low: "text-green-600 dark:text-green-400",
@@ -75,4 +104,30 @@ export function getPriorityColor(priority: string): string {
     critical: "text-red-600 dark:text-red-400",
   };
   return colors[priority] || "text-gray-600";
+}
+
+/**
+ * Badge classes for issue severity levels.
+ */
+export function getSeverityColor(severity: string): string {
+  const colors: Record<string, string> = {
+    low: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+    medium: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+    high: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+    critical: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+  };
+  return colors[severity] || "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
+}
+
+/**
+ * Badge classes for issue/task type categories (bug, feature, etc.).
+ */
+export function getTypeColor(type: string): string {
+  const colors: Record<string, string> = {
+    bug: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    feature: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+    improvement: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+    task: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
+  };
+  return colors[type] || "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
 }

@@ -1,3 +1,6 @@
+// Vitest configuration — uses jsdom for DOM testing, wires up the @/ path alias,
+// and loads the global setup file that extends expect with jest-dom matchers.
+
 import { defineConfig } from "vitest/config";
 import path from "path";
 

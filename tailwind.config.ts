@@ -1,3 +1,6 @@
+// Tailwind configuration — extends the default theme with CSS-variable-based
+// colors for light/dark mode, custom border radii, and Radix accordion animations.
+
 import type { Config } from "tailwindcss";
 import tailwindAnimate from "tailwindcss-animate";
 

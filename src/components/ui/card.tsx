@@ -3,6 +3,10 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
+/**
+ * Composable card container with header, title, description, content, and footer sub-components.
+ * All parts are optional — mix and match as needed.
+ */
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div

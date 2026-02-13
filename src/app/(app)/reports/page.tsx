@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -19,6 +18,7 @@ import { Download } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
+// Register Chart.js components once at module level
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -32,7 +32,9 @@ ChartJS.register(
   Filler
 );
 
-const chartTextColor = "hsl(var(--foreground))";
+// ─── Chart Theming ───
+// Use CSS custom properties so chart colors adapt to light/dark mode automatically
+
 const chartMutedColor = "hsl(var(--muted-foreground))";
 const chartGridColor = "hsl(var(--border))";
 
@@ -59,7 +61,9 @@ const commonOptions = {
   },
 };
 
-// Mock data for charts
+// ─── Mock Data ───
+// These datasets are placeholders — swap with real API calls when the backend is ready
+
 const sprintLabels = [
   "Day 1", "Day 2", "Day 3", "Day 4", "Day 5",
   "Day 6", "Day 7", "Day 8", "Day 9", "Day 10",
@@ -185,10 +189,14 @@ const doughnutOptions = {
   },
 };
 
+// ─── Helpers ───
+
 function handleExport(chartName: string) {
   // Placeholder export functionality
   alert(`Exporting ${chartName} data... (placeholder)`);
 }
+
+// ─── Main Page ───
 
 export default function ReportsPage() {
   return (

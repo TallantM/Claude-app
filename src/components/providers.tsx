@@ -4,6 +4,13 @@ import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
 import { TooltipProvider } from "@/components/ui/tooltip";
 
+/**
+ * Wraps the app in the global providers needed by every page:
+ *
+ * - **SessionProvider** — NextAuth session context for auth state
+ * - **ThemeProvider** — dark/light/system theme via `next-themes` (class strategy)
+ * - **TooltipProvider** — shared Radix tooltip context with zero delay so tooltips feel instant
+ */
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>

@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Search, Bug, AlertTriangle } from "lucide-react";
+import { Plus, Search, Bug } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,8 +27,10 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { getStatusColor, formatDate, getInitials } from "@/lib/utils";
+import { getStatusColor, getSeverityColor, getTypeColor, formatDate, getInitials } from "@/lib/utils";
 import { issueSchema, type IssueInput } from "@/lib/validations";
+import { usePagination } from "@/hooks/use-pagination";
+import { Pagination } from "@/components/ui/pagination";
 
 interface Issue {
   id: string;
@@ -46,26 +48,6 @@ interface Issue {
   assignee?: { id: string; name: string | null; email: string | null; image: string | null } | null;
   reporter?: { id: string; name: string | null; email: string | null; image: string | null };
   project?: { id: string; name: string; key: string };
-}
-
-function getSeverityColor(severity: string): string {
-  const colors: Record<string, string> = {
-    low: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-    medium: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-    high: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-    critical: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-  };
-  return colors[severity] || "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
-}
-
-function getTypeColor(type: string): string {
-  const colors: Record<string, string> = {
-    bug: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-    feature: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-    improvement: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
-    task: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
-  };
-  return colors[type] || "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
 }
 
 function LoadingSkeleton() {
@@ -90,9 +72,6 @@ function LoadingSkeleton() {
 }
 
 export default function IssuesPage() {
-  const [issues, setIssues] = useState<Issue[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [severityFilter, setSeverityFilter] = useState("all");
@@ -100,6 +79,24 @@ export default function IssuesPage() {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const serverParams = useMemo(
+    () => ({ status: statusFilter, severity: severityFilter }),
+    [statusFilter, severityFilter]
+  );
+
+  const {
+    data: issues,
+    pagination,
+    loading,
+    error,
+    setPage,
+    setPageSize,
+    refetch,
+  } = usePagination<Issue>({
+    url: "/api/issues",
+    params: serverParams,
+  });
 
   const {
     register,
@@ -120,24 +117,6 @@ export default function IssuesPage() {
     },
   });
 
-  const fetchIssues = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/issues");
-      if (!res.ok) throw new Error("Failed to fetch issues");
-      const json = await res.json();
-      setIssues(json.data ?? []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchIssues();
-  }, [fetchIssues]);
-
   const onSubmit = async (data: IssueInput) => {
     try {
       setSubmitting(true);
@@ -149,9 +128,9 @@ export default function IssuesPage() {
       if (!res.ok) throw new Error("Failed to create issue");
       setNewDialogOpen(false);
       reset();
-      fetchIssues();
+      refetch();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create issue");
+      console.error(err instanceof Error ? err.message : "Failed to create issue");
     } finally {
       setSubmitting(false);
     }
@@ -162,15 +141,12 @@ export default function IssuesPage() {
     setDetailDialogOpen(true);
   };
 
+  // Client-side text search (status/severity are server-side filtered)
   const filteredIssues = issues.filter((issue) => {
-    const matchesSearch =
+    return (
       search === "" ||
-      issue.title.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" || issue.status === statusFilter;
-    const matchesSeverity =
-      severityFilter === "all" || issue.severity === severityFilter;
-    return matchesSearch && matchesStatus && matchesSeverity;
+      issue.title.toLowerCase().includes(search.toLowerCase())
+    );
   });
 
   if (loading) return <LoadingSkeleton />;
@@ -321,6 +297,15 @@ export default function IssuesPage() {
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Pagination */}
+      {pagination && (
+        <Pagination
+          pagination={pagination}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
       )}
 
       {/* Issue Detail Dialog */}

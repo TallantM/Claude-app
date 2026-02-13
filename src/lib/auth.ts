@@ -8,15 +8,21 @@ import bcrypt from "bcryptjs";
 import type { Adapter } from "next-auth/adapters";
 
 export const authOptions: NextAuthOptions = {
+  // PrismaAdapter bridges NextAuth's session/account storage with our DB
   adapter: PrismaAdapter(prisma) as Adapter,
+
   session: {
-    strategy: "jwt",
+    strategy: "jwt", // JWTs let us avoid a DB lookup on every request
     maxAge: 24 * 60 * 60, // 24 hours
   },
+
+  // Redirect unauthenticated users to our custom login page
   pages: {
     signIn: "/login",
   },
+
   providers: [
+    // Email/password — the primary auth method for local dev and self-hosted
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -50,6 +56,8 @@ export const authOptions: NextAuthOptions = {
         };
       },
     }),
+
+    // OAuth providers are conditionally registered — only if env vars are set
     ...(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET
       ? [
           GitHubProvider({
@@ -67,7 +75,9 @@ export const authOptions: NextAuthOptions = {
         ]
       : []),
   ],
+
   callbacks: {
+    // Stash our custom fields (role, id) into the JWT on first sign-in
     async jwt({ token, user }) {
       if (user) {
         token.role = (user as { role?: string }).role || "developer";
@@ -75,6 +85,7 @@ export const authOptions: NextAuthOptions = {
       }
       return token;
     },
+    // Copy those fields from the JWT into the session object the client sees
     async session({ session, token }) {
       if (session.user) {
         (session.user as { id: string; role: string }).id = token.id as string;

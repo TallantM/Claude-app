@@ -20,11 +20,15 @@ import type {
   ChartDataPoint,
 } from "@/types";
 
+// ─── Types ───
+
 interface DashboardData {
   stats: DashboardStats;
   recentActivity: ActivityType[];
   taskDistribution: ChartDataPoint[];
 }
+
+// ─── Config ───
 
 const statCards = [
   { key: "totalProjects" as const, label: "Total Projects", icon: FolderKanban, color: "text-primary" },
@@ -42,6 +46,9 @@ const taskStatusConfig = [
   { status: "done", label: "Done", color: "bg-green-500 dark:bg-green-400" },
 ];
 
+// ─── Helpers ───
+
+/** Maps an activity entity type to a color-coded icon for the activity feed. */
 function getActivityIcon(type: string) {
   switch (type) {
     case "task":
@@ -57,6 +64,7 @@ function getActivityIcon(type: string) {
   }
 }
 
+/** Placeholder pulse skeleton matching the stat cards + two-column grid layout. */
 function LoadingSkeleton() {
   return (
     <div className="space-y-6">
@@ -72,6 +80,8 @@ function LoadingSkeleton() {
     </div>
   );
 }
+
+// ─── Main Page ───
 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -110,6 +120,7 @@ export default function DashboardPage() {
 
   if (!data) return null;
 
+  // Floor of 1 prevents division-by-zero when calculating bar widths
   const maxTaskCount = Math.max(
     ...taskStatusConfig.map((s) => {
       const point = data.taskDistribution.find((d) => d.label === s.status);

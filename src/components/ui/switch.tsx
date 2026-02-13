@@ -4,6 +4,7 @@ import * as React from "react";
 import * as SwitchPrimitives from "@radix-ui/react-switch";
 import { cn } from "@/lib/utils";
 
+/** Toggle switch for boolean settings — accessible and keyboard-navigable. */
 const Switch = React.forwardRef<
   React.ComponentRef<typeof SwitchPrimitives.Root>,
   React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>

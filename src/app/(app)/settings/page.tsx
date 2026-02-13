@@ -14,6 +14,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
+// ─── Main Page ───
+
 export default function SettingsPage() {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
@@ -26,11 +28,12 @@ export default function SettingsPage() {
 
   const handleSaveProfile = async () => {
     setSaving(true);
-    // Profile save would go here
+    // TODO: wire up to PATCH /api/users/me when backend supports it
     await new Promise((r) => setTimeout(r, 500));
     setSaving(false);
   };
 
+  // Theme picker options — each gets a card-style button
   const themes = [
     { value: "light", label: "Light", icon: Sun },
     { value: "dark", label: "Dark", icon: Moon },

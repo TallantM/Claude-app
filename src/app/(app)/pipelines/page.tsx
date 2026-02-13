@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import {
   Play,
   Clock,
@@ -17,8 +17,9 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { getStatusColor, formatRelativeTime, formatDate } from "@/lib/utils";
-import type { PipelineStatus, PipelineRunStatus } from "@/types";
+import { getStatusColor, formatRelativeTime } from "@/lib/utils";
+import { usePagination } from "@/hooks/use-pagination";
+import { Pagination } from "@/components/ui/pagination";
 
 interface PipelineStage {
   id: string;
@@ -102,29 +103,20 @@ function LoadingSkeleton() {
 }
 
 export default function PipelinesPage() {
-  const [pipelines, setPipelines] = useState<Pipeline[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [expandedPipeline, setExpandedPipeline] = useState<string | null>(null);
   const [triggeringId, setTriggeringId] = useState<string | null>(null);
 
-  const fetchPipelines = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/pipelines");
-      if (!res.ok) throw new Error("Failed to fetch pipelines");
-      const json = await res.json();
-      setPipelines(json.data ?? []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchPipelines();
-  }, [fetchPipelines]);
+  const {
+    data: pipelines,
+    pagination,
+    loading,
+    error,
+    setPage,
+    setPageSize,
+    refetch,
+  } = usePagination<Pipeline>({
+    url: "/api/pipelines",
+  });
 
   const handleTriggerRun = async (pipelineId: string) => {
     try {
@@ -133,7 +125,7 @@ export default function PipelinesPage() {
         method: "POST",
       });
       if (!res.ok) throw new Error("Failed to trigger pipeline run");
-      fetchPipelines();
+      refetch();
     } catch (err) {
       console.error("Error triggering pipeline:", err);
     } finally {
@@ -349,6 +341,15 @@ export default function PipelinesPage() {
             );
           })}
         </div>
+      )}
+
+      {/* Pagination */}
+      {pagination && (
+        <Pagination
+          pagination={pagination}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
       )}
     </div>
   );

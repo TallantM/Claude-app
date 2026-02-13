@@ -13,7 +13,6 @@ import {
   SignalMedium,
   SignalHigh,
   Flame,
-  ChevronDown,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -62,6 +61,8 @@ import {
   type KanbanColumn,
 } from "@/types";
 
+// ─── Types ───
+
 interface ProjectDetail extends ProjectSummary {
   description: string | null;
   startDate: string | null;
@@ -74,6 +75,8 @@ interface ProjectData {
   sprints: SprintWithTasks[];
 }
 
+// ─── Kanban Config ───
+
 const columnConfig: { id: TaskStatus; title: string }[] = [
   { id: TaskStatus.TODO, title: "To Do" },
   { id: TaskStatus.IN_PROGRESS, title: "In Progress" },
@@ -81,6 +84,9 @@ const columnConfig: { id: TaskStatus; title: string }[] = [
   { id: TaskStatus.DONE, title: "Done" },
 ];
 
+// ─── Helpers ───
+
+/** Returns a signal-strength style icon that visually communicates task priority. */
 function getPriorityIcon(priority: string) {
   switch (priority) {
     case "low":
@@ -96,6 +102,7 @@ function getPriorityIcon(priority: string) {
   }
 }
 
+/** Skeleton matching the project header + four-column kanban layout. */
 function LoadingSkeleton() {
   return (
     <div className="space-y-6">
@@ -111,6 +118,9 @@ function LoadingSkeleton() {
   );
 }
 
+// ─── Kanban Card ───
+
+/** Compact task card rendered inside a kanban column with quick-move dropdown. */
 function TaskCard({
   task,
   onStatusChange,
@@ -130,6 +140,7 @@ function TaskCard({
           <h4 className="text-sm font-medium leading-tight flex-1">
             {task.title}
           </h4>
+          {/* Quick-move menu — stopPropagation prevents the card's onClick from firing */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
               <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0">
@@ -177,6 +188,7 @@ function TaskCard({
               <span
                 key={label.id}
                 className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium"
+                // Append "20" (hex alpha) to the label color for a subtle tinted background
                 style={{
                   backgroundColor: label.color + "20",
                   color: label.color,
@@ -205,6 +217,8 @@ function TaskCard({
     </Card>
   );
 }
+
+// ─── Main Page ───
 
 export default function ProjectDetailPage() {
   const params = useParams();
@@ -327,6 +341,7 @@ export default function ProjectDetailPage() {
 
   const { project, tasks, sprints } = data;
 
+  // Build kanban columns by filtering tasks into their respective status buckets
   const columns: KanbanColumn[] = columnConfig.map((col) => ({
     id: col.id,
     title: col.title,

@@ -1,10 +1,15 @@
+// Seed script — populates the database with demo users, projects, tasks, issues,
+// pipelines, and notifications so the app has realistic data out of the box.
+// Run with `npx prisma db seed`.
+
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  // Create admin user
+  // ─── Users ───
+  // All passwords are intentionally simple — this is demo data only
   const adminPassword = await bcrypt.hash("admin123", 10);
   const admin = await prisma.user.upsert({
     where: { email: "admin@sdlchub.com" },
@@ -17,7 +22,7 @@ async function main() {
     },
   });
 
-  // Create demo users
+  // Additional demo users with different roles to showcase permissions
   const devPassword = await bcrypt.hash("dev12345", 10);
   const dev = await prisma.user.upsert({
     where: { email: "dev@sdlchub.com" },
@@ -52,7 +57,7 @@ async function main() {
     },
   });
 
-  // Create team
+  // ─── Team ───
   const team = await prisma.team.upsert({
     where: { id: "team-alpha" },
     update: {},
@@ -63,7 +68,7 @@ async function main() {
     },
   });
 
-  // Add members
+  // Assign all demo users to the team
   for (const user of [admin, dev, pm, tester]) {
     await prisma.teamMember.upsert({
       where: { userId_teamId: { userId: user.id, teamId: team.id } },
@@ -76,7 +81,7 @@ async function main() {
     });
   }
 
-  // Create projects
+  // ─── Projects ───
   const project1 = await prisma.project.upsert({
     where: { key: "SDLC" },
     update: {},
@@ -116,7 +121,7 @@ async function main() {
     },
   });
 
-  // Create labels for project1
+  // ─── Labels ───
   const labels = await Promise.all([
     prisma.label.upsert({
       where: { name_projectId: { name: "frontend", projectId: project1.id } },
@@ -140,7 +145,7 @@ async function main() {
     }),
   ]);
 
-  // Create sprints
+  // ─── Sprints ───
   const sprint1 = await prisma.sprint.upsert({
     where: { id: "sprint-1" },
     update: {},
@@ -183,7 +188,7 @@ async function main() {
     },
   });
 
-  // Create milestone
+  // ─── Milestones ───
   await prisma.milestone.upsert({
     where: { id: "milestone-mvp" },
     update: {},
@@ -197,7 +202,8 @@ async function main() {
     },
   });
 
-  // Create tasks
+  // ─── Tasks ───
+  // Spread across sprints with varying statuses to fill the kanban board
   const tasks = [
     { title: "Set up project structure", status: "done", priority: "high", type: "task", storyPoints: 3, sprintId: sprint1.id, assigneeId: dev.id, position: 0 },
     { title: "Design database schema", status: "done", priority: "high", type: "task", storyPoints: 5, sprintId: sprint1.id, assigneeId: dev.id, position: 1 },
@@ -226,7 +232,7 @@ async function main() {
     });
   }
 
-  // Create issues
+  // ─── Issues ───
   const issues = [
     { title: "Login page not responsive on small screens", status: "open", severity: "medium", type: "bug", reproSteps: "1. Open login page\n2. Resize to 320px width\n3. Form overflows", assigneeId: dev.id },
     { title: "API rate limiting not implemented", status: "open", severity: "high", type: "improvement", assigneeId: dev.id },
@@ -245,7 +251,7 @@ async function main() {
     });
   }
 
-  // Create pipelines
+  // ─── CI/CD Pipelines & Runs ───
   const pipeline1 = await prisma.pipeline.create({
     data: {
       name: "CI/CD Pipeline",
@@ -271,7 +277,7 @@ async function main() {
     ],
   });
 
-  // Create git repos
+  // ─── Git Repositories ───
   await prisma.gitRepo.create({
     data: {
       name: "sdlc-hub",
@@ -290,7 +296,7 @@ async function main() {
     },
   });
 
-  // Create activities
+  // ─── Activity Feed ───
   const activities = [
     { type: "created", entity: "project", entityId: project1.id, details: "Created project SDLC Hub Platform", userId: admin.id, projectId: project1.id },
     { type: "created", entity: "sprint", entityId: sprint1.id, details: "Started Sprint 1 - Foundation", userId: pm.id, projectId: project1.id },
@@ -306,7 +312,7 @@ async function main() {
     await prisma.activity.create({ data: activity });
   }
 
-  // Create notifications
+  // ─── Notifications ───
   await prisma.notification.createMany({
     data: [
       { type: "task_assigned", title: "New task assigned", message: "You have been assigned 'Implement Kanban board'", userId: dev.id, link: "/projects" },

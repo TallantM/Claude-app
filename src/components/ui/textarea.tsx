@@ -3,6 +3,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
+/** Multi-line text input with the same styling conventions as Input. */
 const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
   ({ className, ...props }, ref) => {
     return (

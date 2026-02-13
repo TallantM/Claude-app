@@ -4,6 +4,10 @@ import * as React from "react";
 import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
 import { cn } from "@/lib/utils";
 
+/**
+ * Context menu triggered by a button click.
+ * Compose with DropdownMenuTrigger, DropdownMenuContent, and DropdownMenuItem.
+ */
 const DropdownMenu = DropdownMenuPrimitive.Root;
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger;
 const DropdownMenuGroup = DropdownMenuPrimitive.Group;

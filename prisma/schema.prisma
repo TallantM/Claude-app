@@ -9,6 +9,7 @@ datasource db {
 
 // ─── Auth Models ───────────────────────────────────────────
 
+// OAuth account link — one User can have multiple provider accounts (GitHub, Google, etc.)
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -28,6 +29,7 @@ model Account {
   @@unique([provider, providerAccountId])
 }
 
+// Active browser session — NextAuth rotates these automatically
 model Session {
   id           String   @id @default(cuid())
   sessionToken String   @unique
@@ -36,6 +38,7 @@ model Session {
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+// One-time token for email verification and password resets
 model VerificationToken {
   identifier String
   token      String   @unique
@@ -46,6 +49,7 @@ model VerificationToken {
 
 // ─── User & Team Models ────────────────────────────────────
 
+// Central user record — supports both credential-based and OAuth login
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -70,6 +74,7 @@ model User {
   activities     Activity[]
 }
 
+// Organizational group that owns one or more projects
 model Team {
   id          String   @id @default(cuid())
   name        String
@@ -81,6 +86,7 @@ model Team {
   projects Project[]
 }
 
+// Join table connecting users to teams with a per-team role
 model TeamMember {
   id     String @id @default(cuid())
   role   String @default("developer")
@@ -95,6 +101,7 @@ model TeamMember {
 
 // ─── Project Models ────────────────────────────────────────
 
+// Top-level container for all SDLC work — sprints, tasks, issues, pipelines, etc.
 model Project {
   id          String   @id @default(cuid())
   name        String
@@ -118,6 +125,7 @@ model Project {
   labels     Label[]
 }
 
+// Time-boxed iteration within a project — tasks are assigned to sprints
 model Sprint {
   id        String    @id @default(cuid())
   name      String
@@ -133,6 +141,7 @@ model Sprint {
   tasks   Task[]
 }
 
+// Major deliverable or release target with an optional due date
 model Milestone {
   id          String    @id @default(cuid())
   name        String
@@ -147,6 +156,7 @@ model Milestone {
   tasks   Task[]
 }
 
+// Individual work item on the kanban board — supports sub-tasks via self-referential parentId
 model Task {
   id          String    @id @default(cuid())
   title       String
@@ -177,6 +187,7 @@ model Task {
   labels    TaskLabel[]
 }
 
+// Color-coded tag scoped to a project — used to categorize tasks
 model Label {
   id        String @id @default(cuid())
   name      String
@@ -189,6 +200,7 @@ model Label {
   @@unique([name, projectId])
 }
 
+// Many-to-many join between tasks and labels
 model TaskLabel {
   taskId  String
   labelId String
@@ -201,6 +213,7 @@ model TaskLabel {
 
 // ─── Issue Tracking ────────────────────────────────────────
 
+// Bug report or feature request tracked separately from sprint tasks
 model Issue {
   id          String    @id @default(cuid())
   title       String
@@ -223,6 +236,7 @@ model Issue {
 
 // ─── Comments ──────────────────────────────────────────────
 
+// Threaded comment that can belong to either a task or an issue (polymorphic via nullable FKs)
 model Comment {
   id        String   @id @default(cuid())
   content   String
@@ -239,6 +253,7 @@ model Comment {
 
 // ─── CI/CD Pipeline ────────────────────────────────────────
 
+// CI/CD pipeline definition — stores its YAML config as text
 model Pipeline {
   id        String   @id @default(cuid())
   name      String
@@ -253,6 +268,7 @@ model Pipeline {
   stages  PipelineStage[]
 }
 
+// Ordered step within a pipeline (Build, Test, Deploy, etc.)
 model PipelineStage {
   id         String @id @default(cuid())
   name       String
@@ -262,6 +278,7 @@ model PipelineStage {
   pipeline Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
 }
 
+// Single execution of a pipeline — tracks branch, commit, duration, and logs
 model PipelineRun {
   id         String    @id @default(cuid())
   status     String    @default("pending") // pending, running, success, failed, cancelled
@@ -278,6 +295,7 @@ model PipelineRun {
 
 // ─── Git Integration ───────────────────────────────────────
 
+// External Git repository linked to a project for version control tracking
 model GitRepo {
   id        String   @id @default(cuid())
   name      String
@@ -291,6 +309,7 @@ model GitRepo {
 
 // ─── Notifications ─────────────────────────────────────────
 
+// In-app notification delivered to a specific user with an optional deep link
 model Notification {
   id        String   @id @default(cuid())
   type      String   // task_assigned, comment_added, sprint_started, etc.
@@ -306,6 +325,7 @@ model Notification {
 
 // ─── Activity & Audit ──────────────────────────────────────
 
+// Human-readable activity feed entry (e.g. "moved task X to Done")
 model Activity {
   id        String   @id @default(cuid())
   type      String   // created, updated, deleted, commented, etc.
@@ -320,6 +340,7 @@ model Activity {
   project Project? @relation(fields: [projectId], references: [id])
 }
 
+// Immutable audit trail — stores before/after JSON snapshots for compliance
 model AuditLog {
   id        String   @id @default(cuid())
   action    String

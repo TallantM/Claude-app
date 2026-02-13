@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/dialog";
 import { getStatusColor, generateKey } from "@/lib/utils";
 import { projectSchema, type ProjectInput } from "@/lib/validations";
+import { usePagination } from "@/hooks/use-pagination";
+import { Pagination } from "@/components/ui/pagination";
 import type { ProjectSummary } from "@/types";
 
 function LoadingSkeleton() {
@@ -52,13 +54,28 @@ function LoadingSkeleton() {
 
 export default function ProjectsPage() {
   const router = useRouter();
-  const [projects, setProjects] = useState<ProjectSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const serverParams = useMemo(
+    () => ({ status: statusFilter, search: search || undefined }),
+    [statusFilter, search]
+  );
+
+  const {
+    data: projects,
+    pagination,
+    loading,
+    error,
+    setPage,
+    setPageSize,
+    refetch,
+  } = usePagination<ProjectSummary>({
+    url: "/api/projects",
+    params: serverParams,
+  });
 
   const {
     register,
@@ -87,24 +104,6 @@ export default function ProjectsPage() {
     }
   }, [watchName, setValue]);
 
-  const fetchProjects = useCallback(async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/projects");
-      if (!res.ok) throw new Error("Failed to fetch projects");
-      const json = await res.json();
-      setProjects(json.data ?? []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchProjects();
-  }, [fetchProjects]);
-
   const onSubmit = async (data: ProjectInput) => {
     try {
       setSubmitting(true);
@@ -116,23 +115,16 @@ export default function ProjectsPage() {
       if (!res.ok) throw new Error("Failed to create project");
       setDialogOpen(false);
       reset();
-      fetchProjects();
+      refetch();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create project");
+      console.error(err instanceof Error ? err.message : "Failed to create project");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const filteredProjects = projects.filter((project) => {
-    const matchesSearch =
-      search === "" ||
-      project.name.toLowerCase().includes(search.toLowerCase()) ||
-      project.key.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" || project.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  // Both search and status are now server-side filtered
+  const filteredProjects = projects;
 
   if (loading) return <LoadingSkeleton />;
 
@@ -248,6 +240,15 @@ export default function ProjectsPage() {
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Pagination */}
+      {pagination && (
+        <Pagination
+          pagination={pagination}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+        />
       )}
 
       {/* New Project Dialog */}

@@ -1,3 +1,5 @@
+// Tests for the shared utility helpers used across the entire app.
+
 import { describe, it, expect } from "vitest";
 import {
   cn,
@@ -8,6 +10,8 @@ import {
   getStatusColor,
   getPriorityColor,
 } from "@/lib/utils";
+
+// ─── Class Name Merging (Tailwind-aware) ───
 
 describe("cn", () => {
   it("merges class names", () => {
@@ -23,6 +27,8 @@ describe("cn", () => {
   });
 });
 
+// ─── Date Formatting ───
+
 describe("formatDate", () => {
   it("formats a date string", () => {
     const result = formatDate("2025-01-15");
@@ -37,6 +43,8 @@ describe("formatDate", () => {
     expect(result).toContain("1");
   });
 });
+
+// ─── Relative Time (e.g. "5m ago") ───
 
 describe("formatRelativeTime", () => {
   it("returns 'just now' for recent dates", () => {
@@ -60,6 +68,8 @@ describe("formatRelativeTime", () => {
   });
 });
 
+// ─── Project Key Generation ───
+
 describe("generateKey", () => {
   it("generates uppercase key from name", () => {
     expect(generateKey("My Project")).toBe("MYPROJ");
@@ -74,6 +84,8 @@ describe("generateKey", () => {
   });
 });
 
+// ─── Avatar Initials ───
+
 describe("getInitials", () => {
   it("returns initials from full name", () => {
     expect(getInitials("John Doe")).toBe("JD");
@@ -87,6 +99,8 @@ describe("getInitials", () => {
     expect(getInitials("John Michael Doe")).toBe("JM");
   });
 });
+
+// ─── Status / Priority Color Mapping ───
 
 describe("getStatusColor", () => {
   it("returns correct color for todo", () => {

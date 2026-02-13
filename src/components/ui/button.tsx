@@ -5,6 +5,8 @@ import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
+// ─── Variant Definitions ───
+
 const buttonVariants = cva(
   "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
   {
@@ -37,8 +39,13 @@ export interface ButtonProps
   asChild?: boolean;
 }
 
+/**
+ * Polymorphic button with built-in variant and size support.
+ * Use `asChild` to render as a different element (e.g. a link) while keeping button styles.
+ */
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
+    // When asChild is true, Radix Slot merges props onto the child element
     const Comp = asChild ? Slot : "button";
     return (
       <Comp

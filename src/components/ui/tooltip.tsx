@@ -8,6 +8,7 @@ const TooltipProvider = TooltipPrimitive.Provider;
 const Tooltip = TooltipPrimitive.Root;
 const TooltipTrigger = TooltipPrimitive.Trigger;
 
+/** Animated tooltip popup. Wrap the target element in TooltipTrigger and place text in TooltipContent. */
 const TooltipContent = React.forwardRef<
   React.ComponentRef<typeof TooltipPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>

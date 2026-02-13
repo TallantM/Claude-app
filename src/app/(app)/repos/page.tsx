@@ -32,6 +32,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 
+// ─── Types ───
+
 interface Repository {
   id: string;
   name: string;
@@ -43,6 +45,8 @@ interface Repository {
   project?: { id: string; name: string; key: string } | null;
 }
 
+// ─── Validation ───
+
 const repoSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
   url: z.string().url("Must be a valid URL"),
@@ -53,6 +57,9 @@ const repoSchema = z.object({
 
 type RepoInput = z.infer<typeof repoSchema>;
 
+// ─── Helpers ───
+
+/** Returns a branded badge (GitHub/GitLab/Bitbucket) for the given provider string. */
 function getProviderBadge(provider: string) {
   switch (provider) {
     case "github":
@@ -97,6 +104,8 @@ function LoadingSkeleton() {
   );
 }
 
+// ─── Main Page ───
+
 export default function ReposPage() {
   const [repos, setRepos] = useState<Repository[]>([]);
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
@@ -122,6 +131,7 @@ export default function ReposPage() {
     },
   });
 
+  // Fetch repos and projects in parallel so we can link repos to project names
   const fetchRepos = useCallback(async () => {
     try {
       setLoading(true);

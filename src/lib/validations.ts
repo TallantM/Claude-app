@@ -1,10 +1,14 @@
 import { z } from "zod";
 
+// ─── Auth Schemas ──────────────────────────────────────────
+
+/** Validates login form — just email + password. */
 export const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
+/** Validates registration with password confirmation. */
 export const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
@@ -15,6 +19,9 @@ export const registerSchema = z.object({
   path: ["confirmPassword"],
 });
 
+// ─── Project & Task Schemas ────────────────────────────────
+
+/** Project creation/update — key is auto-uppercased by Zod. */
 export const projectSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
   key: z.string().min(2).max(6).toUpperCase(),
@@ -25,6 +32,7 @@ export const projectSchema = z.object({
   teamId: z.string().optional(),
 });
 
+/** Task creation/update — covers all Kanban-relevant fields. */
 export const taskSchema = z.object({
   title: z.string().min(1, "Title is required").max(200),
   description: z.string().max(5000).optional(),
@@ -38,6 +46,9 @@ export const taskSchema = z.object({
   parentId: z.string().optional(),
 });
 
+// ─── Issue & Sprint Schemas ────────────────────────────────
+
+/** Bug reports and feature requests. */
 export const issueSchema = z.object({
   title: z.string().min(1, "Title is required").max(200),
   description: z.string().max(5000).optional(),
@@ -48,6 +59,7 @@ export const issueSchema = z.object({
   assigneeId: z.string().optional(),
 });
 
+/** Sprint planning — name, goal, and date range. */
 export const sprintSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
   goal: z.string().max(500).optional(),
@@ -56,10 +68,14 @@ export const sprintSchema = z.object({
   endDate: z.string().optional(),
 });
 
+// ─── Other Schemas ─────────────────────────────────────────
+
+/** Validates a comment body — just a non-empty string. */
 export const commentSchema = z.object({
   content: z.string().min(1, "Comment cannot be empty").max(5000),
 });
 
+/** CI/CD pipeline with optional stage definitions. */
 export const pipelineSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
   config: z.string().optional(),
@@ -68,6 +84,8 @@ export const pipelineSchema = z.object({
     order: z.number().int(),
   })).optional(),
 });
+
+// ─── Inferred Types ────────────────────────────────────────
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { parsePaginationParams, getPrismaPageArgs, buildPaginatedResponse } from "@/lib/pagination";
 import { z } from "zod";
 
 const teamCreateSchema = z.object({
@@ -9,28 +10,35 @@ const teamCreateSchema = z.object({
   description: z.string().max(500).optional(),
 });
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        image: true,
-        role: true,
-        createdAt: true,
-        teamMembers: {
-          include: {
-            team: {
-              select: { id: true, name: true },
+    const { searchParams } = new URL(request.url);
+    const paginationParams = parsePaginationParams(searchParams);
+
+    const [total, users] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.findMany({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          role: true,
+          createdAt: true,
+          teamMembers: {
+            include: {
+              team: {
+                select: { id: true, name: true },
+              },
             },
           },
         },
-      },
-      orderBy: { name: "asc" },
-    });
+        orderBy: { name: "asc" },
+        ...getPrismaPageArgs(paginationParams),
+      }),
+    ]);
 
-    return NextResponse.json(users);
+    return NextResponse.json(buildPaginatedResponse(users, total, paginationParams));
   } catch (error) {
     console.error("Error fetching team members:", error);
     return NextResponse.json(

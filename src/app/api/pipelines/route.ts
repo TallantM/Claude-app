@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { pipelineSchema } from "@/lib/validations";
+import { parsePaginationParams, getPrismaPageArgs, buildPaginatedResponse } from "@/lib/pagination";
 import { z } from "zod";
 
 export async function GET(request: Request) {
@@ -17,15 +18,21 @@ export async function GET(request: Request) {
       );
     }
 
-    const pipelines = await prisma.pipeline.findMany({
-      where: { projectId: projectId.trim() },
-      include: {
-        _count: {
-          select: { runs: true },
+    const where = { projectId: projectId.trim() };
+    const paginationParams = parsePaginationParams(searchParams);
+    const [total, pipelines] = await Promise.all([
+      prisma.pipeline.count({ where }),
+      prisma.pipeline.findMany({
+        where,
+        include: {
+          _count: {
+            select: { runs: true },
+          },
         },
-      },
-      orderBy: { updatedAt: "desc" },
-    });
+        orderBy: { updatedAt: "desc" },
+        ...getPrismaPageArgs(paginationParams),
+      }),
+    ]);
 
     const result = pipelines.map((pipeline) => ({
       ...pipeline,
@@ -33,7 +40,7 @@ export async function GET(request: Request) {
       _count: undefined,
     }));
 
-    return NextResponse.json(result);
+    return NextResponse.json(buildPaginatedResponse(result, total, paginationParams));
   } catch (error) {
     console.error("Error fetching pipelines:", error);
     return NextResponse.json(

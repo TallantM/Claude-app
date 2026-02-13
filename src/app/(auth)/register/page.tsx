@@ -12,6 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { registerSchema, type RegisterInput } from "@/lib/validations";
 
+// ─── Main Page ───
+
 export default function RegisterPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +47,7 @@ export default function RegisterPage() {
         throw new Error(body.error || "Registration failed");
       }
 
+      // Redirect to login with a query param so the login page can show a success toast
       router.push("/login?registered=true");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { taskSchema } from "@/lib/validations";
+import { parsePaginationParams, getPrismaPageArgs, buildPaginatedResponse } from "@/lib/pagination";
 import { z } from "zod";
 import type { Prisma } from "@prisma/client";
 
@@ -23,24 +24,29 @@ export async function GET(request: Request) {
     if (assigneeId) where.assigneeId = assigneeId.trim();
     if (sprintId) where.sprintId = sprintId.trim();
 
-    const tasks = await prisma.task.findMany({
-      where,
-      include: {
-        assignee: {
-          select: { id: true, name: true, email: true, image: true },
-        },
-        labels: {
-          include: {
-            label: {
-              select: { id: true, name: true, color: true },
+    const paginationParams = parsePaginationParams(searchParams);
+    const [total, tasks] = await Promise.all([
+      prisma.task.count({ where }),
+      prisma.task.findMany({
+        where,
+        include: {
+          assignee: {
+            select: { id: true, name: true, email: true, image: true },
+          },
+          labels: {
+            include: {
+              label: {
+                select: { id: true, name: true, color: true },
+              },
             },
           },
         },
-      },
-      orderBy: { position: "asc" },
-    });
+        orderBy: { position: "asc" },
+        ...getPrismaPageArgs(paginationParams),
+      }),
+    ]);
 
-    return NextResponse.json(tasks);
+    return NextResponse.json(buildPaginatedResponse(tasks, total, paginationParams));
   } catch (error) {
     console.error("Error fetching tasks:", error);
     return NextResponse.json(

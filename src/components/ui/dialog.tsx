@@ -5,11 +5,16 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// ─── Base Primitives ───
+
 const Dialog = DialogPrimitive.Root;
 const DialogTrigger = DialogPrimitive.Trigger;
 const DialogPortal = DialogPrimitive.Portal;
 const DialogClose = DialogPrimitive.Close;
 
+// ─── Styled Wrappers ───
+
+/** Full-screen translucent backdrop behind the dialog. */
 const DialogOverlay = React.forwardRef<
   React.ComponentRef<typeof DialogPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>
@@ -25,6 +30,10 @@ const DialogOverlay = React.forwardRef<
 ));
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
+/**
+ * Centered dialog panel with an overlay and a built-in close button.
+ * Renders inside a portal so it sits above all other content.
+ */
 const DialogContent = React.forwardRef<
   React.ComponentRef<typeof DialogPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
