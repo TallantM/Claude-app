@@ -16,6 +16,7 @@ export default defineConfig({
   workers: 1, // Single worker for SQLite
   reporter: [
     ["html", { outputFolder: "playwright-report", open: "never" }],
+    ["allure-playwright", { outputFolder: "allure-results" }],
     ["list"],
   ],
 

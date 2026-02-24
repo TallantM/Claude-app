@@ -190,3 +190,30 @@ Follow `CODING_STANDARDS.md`. Key points for test code:
 | `sdd-framework/docs/agent-patterns.md` | AI prompts for spec/code generation |
 | `sdd-framework/docs/test-architecture-spec.md` | Architecture patterns and anti-patterns |
 | `sdd-framework/docs/retrospective-parallel-tests.md` | Real lessons from C# implementation |
+
+---
+
+## Definition of Done
+
+Before this engagement is complete, verify ALL of the following:
+
+### Required Files
+- [ ] `specs/PROJECT-SPEC.md` — filled out for this tech stack
+- [ ] `specs/features/[feature]/` — all 4 spec files per feature
+- [ ] `.env.test.example` — documents all required test environment variables
+- [ ] `playwright.config.ts` — includes Allure reporter
+- [ ] `.github/workflows/ci.yml` — runs unit + conformance + E2E on every push
+- [ ] `tests/conformance/spec-conformance.test.ts` — validates spec-code alignment
+
+### Required Scripts in package.json
+- [ ] `test` — unit tests (vitest)
+- [ ] `test:e2e` — E2E tests (playwright)
+- [ ] `test:conformance` — spec-code alignment check
+- [ ] `test:e2e:report` — generate and open Allure report
+- [ ] `test:coverage` — unit test coverage
+
+### Required: All Tests Must Pass
+- [ ] `npm test` — all unit tests pass
+- [ ] `npm run test:conformance` — all conformance tests pass
+- [ ] `npm run test:e2e` — all E2E tests pass (seed DB first)
+- [ ] First CI run passes on push
