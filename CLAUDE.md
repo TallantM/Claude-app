@@ -193,6 +193,21 @@ Follow `CODING_STANDARDS.md`. Key points for test code:
 
 ---
 
+## Final Audit — Required Before Declaring Done
+
+Before committing, walk through EVERY spec scenario:
+
+For each feature in `specs/features/`:
+1. Open `unit-tests.md` — list every scenario heading
+2. Open the corresponding test file — confirm each scenario has a test
+3. Open `workflows.md` — list every workflow
+4. Open the corresponding `.spec.ts` — confirm each workflow has a test
+
+If any scenario is missing a test: write it now.
+**This step is not optional.**
+
+---
+
 ## Definition of Done
 
 Before this engagement is complete, verify ALL of the following:

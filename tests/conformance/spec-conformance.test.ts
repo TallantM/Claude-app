@@ -9,6 +9,7 @@
  * 2. Each feature in specs/features/ has all 4 spec files
  * 3. Each feature has a matching E2E spec file in tests/e2e/
  * 4. tests/e2e/page-objects/ has at least one page object per feature
+ * 5. Total unit test count >= total spec scenario count (soft warn)
  */
 
 import { describe, it, expect } from "vitest";
@@ -113,5 +114,56 @@ describe("Page objects", () => {
       pageObjects.length,
       `Found ${pageObjects.length} page objects but need at least ${features.length} (one per feature)`
     ).toBeGreaterThanOrEqual(features.length);
+  });
+});
+
+// ─── 5. Scenario coverage (soft warn) ────────────────────────────────────────
+
+describe("Scenario coverage", () => {
+  const UNIT_TESTS_DIR = path.join(ROOT, "tests", "unit");
+
+  it("total unit tests >= total spec scenarios (or logs a warning)", () => {
+    const features = getFeatures();
+
+    // Count "### Scenario:" headings across all unit-tests.md files
+    let totalScenarios = 0;
+    for (const feature of features) {
+      const specFile = path.join(SPECS_FEATURES_DIR, feature, "unit-tests.md");
+      if (fs.existsSync(specFile)) {
+        const content = fs.readFileSync(specFile, "utf-8");
+        const matches = content.match(/^### Scenario:/gm);
+        totalScenarios += matches ? matches.length : 0;
+      }
+    }
+
+    // Count it( calls across all unit test files
+    let totalTests = 0;
+    if (fs.existsSync(UNIT_TESTS_DIR)) {
+      const testFiles = fs
+        .readdirSync(UNIT_TESTS_DIR)
+        .filter((f) => f.endsWith(".test.tsx") || f.endsWith(".test.ts"));
+      for (const file of testFiles) {
+        const content = fs.readFileSync(
+          path.join(UNIT_TESTS_DIR, file),
+          "utf-8"
+        );
+        const matches = content.match(/^\s*it\(/gm);
+        totalTests += matches ? matches.length : 0;
+      }
+    }
+
+    if (totalTests < totalScenarios) {
+      console.warn(
+        `\n⚠  COVERAGE GAP: ${totalTests} unit tests for ${totalScenarios} spec scenarios.` +
+          ` Missing ~${totalScenarios - totalTests} tests. Run the Final Audit in CLAUDE.md.`
+      );
+    } else {
+      console.log(
+        `✓  Coverage: ${totalTests} unit tests for ${totalScenarios} spec scenarios.`
+      );
+    }
+
+    // Soft assertion — warn but don't fail; remove ">= 0" to make this a hard fail
+    expect(totalTests).toBeGreaterThanOrEqual(0);
   });
 });
