@@ -109,4 +109,19 @@ describe("LoginPage", () => {
     // Assert
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
+
+  it("should disable the submit button while login is in progress", async () => {
+    // Arrange — signIn returns a promise that never resolves
+    mockSignIn.mockImplementation(() => new Promise(() => {}));
+    const user = userEvent.setup();
+    render(<LoginPage />);
+
+    // Act — fill and submit the form
+    await user.type(screen.getByLabelText("Email"), "user@example.com");
+    await user.type(screen.getByLabelText("Password"), "password123");
+    await user.click(screen.getByRole("button", { name: /sign in/i }));
+
+    // Assert — button is disabled while the login promise is pending
+    expect(screen.getByRole("button", { name: /sign in/i })).toBeDisabled();
+  });
 });

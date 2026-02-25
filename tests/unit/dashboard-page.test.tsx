@@ -168,4 +168,19 @@ describe("DashboardPage", () => {
       expect(screen.getByText("Error loading dashboard")).toBeInTheDocument();
     });
   });
+
+  it("should show loading skeleton while dashboard data is loading", async () => {
+    // Arrange — fetch never resolves, keeping loading=true
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(() => new Promise(() => {}))
+    );
+
+    // Act
+    const { container } = render(<DashboardPage />);
+
+    // Assert — skeleton is visible; stat card labels not yet rendered
+    expect(container.querySelector(".animate-pulse")).toBeInTheDocument();
+    expect(screen.queryByText("Total Projects")).not.toBeInTheDocument();
+  });
 });

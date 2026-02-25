@@ -192,4 +192,81 @@ describe("IssuesPage", () => {
       expect(screen.getByText("Error loading issues")).toBeInTheDocument();
     });
   });
+
+  it("should show loading skeleton while issues are loading", async () => {
+    // Arrange — fetch never resolves, keeping loading=true
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(() => new Promise(() => {}))
+    );
+
+    // Act
+    const { container } = render(<IssuesPage />);
+
+    // Assert — skeleton is visible; no issue rows rendered yet
+    expect(container.querySelector(".animate-pulse")).toBeInTheDocument();
+    expect(screen.queryByText("Login button broken")).not.toBeInTheDocument();
+  });
+
+  it("should POST to /api/issues and refresh the list on submit", async () => {
+    // Arrange
+    const NEW_ISSUE = {
+      id: "i3",
+      title: "New Critical Bug",
+      status: "open",
+      severity: "critical",
+      type: "bug",
+      description: "",
+      reproSteps: null,
+      projectId: null,
+      assigneeId: null,
+      reporterId: "u1",
+      createdAt: "2026-01-03T00:00:00Z",
+      updatedAt: "2026-01-03T00:00:00Z",
+      project: null,
+      reporter: { id: "u1", name: "Alice", email: "alice@example.com", image: null },
+    };
+    const UPDATED_RESPONSE = {
+      data: [...MOCK_ISSUES_RESPONSE.data, NEW_ISSUE],
+      pagination: { total: 3, page: 1, pageSize: 10, totalPages: 1 },
+    };
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => MOCK_ISSUES_RESPONSE })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "i3" }) })
+      .mockResolvedValue({ ok: true, json: async () => UPDATED_RESPONSE });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const user = userEvent.setup();
+    render(<IssuesPage />);
+    await waitFor(() => screen.getByText("Login button broken"));
+
+    // Open create dialog
+    await user.click(screen.getByRole("button", { name: /new issue/i }));
+    await waitFor(() => screen.getByText("Report New Issue"));
+
+    // Fill form
+    await user.type(screen.getByLabelText("Title"), "New Critical Bug");
+
+    // Submit
+    await user.click(screen.getByRole("button", { name: /create issue/i }));
+
+    // Assert POST was called with the right data
+    await waitFor(() => {
+      const postCall = mockFetch.mock.calls.find(
+        (args) => args[1]?.method === "POST"
+      );
+      expect(postCall).toBeDefined();
+      expect(postCall![0]).toBe("/api/issues");
+      const body = JSON.parse(postCall![1].body);
+      expect(body.title).toBe("New Critical Bug");
+    });
+
+    // Assert GET was called again after POST (refetch)
+    await waitFor(() => {
+      const getCalls = mockFetch.mock.calls.filter(
+        (args) => !args[1]?.method || args[1]?.method === "GET"
+      );
+      expect(getCalls.length).toBeGreaterThanOrEqual(2);
+    });
+  });
 });

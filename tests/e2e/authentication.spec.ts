@@ -85,6 +85,21 @@ test.describe("Authentication", () => {
       await expect(page).toHaveURL("/register");
       await expect(registerPage.isHeadingVisible()).resolves.toBe(true);
     });
+
+    test("should show validation feedback on empty form submission", async ({ page }) => {
+      // Arrange
+      const loginPage = new LoginPage(page);
+      await loginPage.navigateTo();
+
+      // Act — click submit without filling any fields
+      await page.getByRole("button", { name: /sign in/i }).click();
+
+      // Assert — page stays on /login; RHF + zod shows validation feedback
+      await expect(page).toHaveURL("/login");
+      await expect(
+        page.getByText("Invalid email address").or(page.locator('[role="alert"]'))
+      ).toBeVisible({ timeout: 5000 });
+    });
   });
 
   test.describe("Register", () => {
@@ -151,6 +166,52 @@ test.describe("Authentication", () => {
       // Assert
       await expect(page).toHaveURL("/login");
       await expect(page.locator("text=Welcome back")).toBeVisible();
+    });
+
+    test("should show error when registering with an already-registered email", async ({ page }) => {
+      // Arrange
+      const registerPage = new RegisterPage(page);
+      await registerPage.navigateTo();
+
+      // Act — attempt to register with a seeded (already-existing) email
+      await registerPage.register(
+        "Existing User",
+        "tester@sdlchub.com",
+        "testpassword123",
+        "testpassword123"
+      );
+
+      // Assert — server returns a conflict error; alert is shown
+      await expect(page.locator('[role="alert"]')).toBeVisible({ timeout: 10000 });
+      await expect(page).toHaveURL("/register");
+    });
+  });
+
+  test.describe("Workflows", () => {
+    test("full workflow: register new account, login, reach dashboard", async ({ page }) => {
+      // Arrange — unique email to avoid conflicts with other test runs
+      const uniqueEmail = `test-${Date.now()}@example.com`;
+      const loginPage = new LoginPage(page);
+      const registerPage = new RegisterPage(page);
+
+      // Step 1: Register new account
+      await registerPage.navigateTo();
+      await registerPage.register(
+        "Workflow Test User",
+        uniqueEmail,
+        "testpassword123",
+        "testpassword123"
+      );
+
+      // Assert redirected to /login after registration
+      await expect(page).toHaveURL(/\/login/, { timeout: 15000 });
+
+      // Step 2: Login with the newly registered account
+      await loginPage.login(uniqueEmail, "testpassword123");
+
+      // Assert redirected to /dashboard
+      await expect(page).toHaveURL("/dashboard", { timeout: 15000 });
+      await expect(page.locator('h1:has-text("Dashboard")')).toBeVisible();
     });
   });
 

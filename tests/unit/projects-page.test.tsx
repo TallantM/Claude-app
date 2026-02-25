@@ -173,4 +173,82 @@ describe("ProjectsPage", () => {
       expect(screen.getByText("Error loading projects")).toBeInTheDocument();
     });
   });
+
+  it("should show loading skeleton while projects are loading", async () => {
+    // Arrange — fetch never resolves, keeping loading=true
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(() => new Promise(() => {}))
+    );
+
+    // Act
+    const { container } = render(<ProjectsPage />);
+
+    // Assert — skeleton is visible; no project cards rendered yet
+    expect(container.querySelector(".animate-pulse")).toBeInTheDocument();
+    expect(screen.queryByText("Alpha Project")).not.toBeInTheDocument();
+  });
+
+  it("should POST to /api/projects and refresh the list on submit", async () => {
+    // Arrange
+    const UPDATED_RESPONSE = {
+      data: [
+        ...MOCK_PROJECTS_RESPONSE.data,
+        {
+          id: "p2",
+          name: "Beta Project",
+          key: "BETA",
+          status: "active",
+          description: "",
+          taskCount: 0,
+          openIssues: 0,
+          teamName: null,
+          startDate: null,
+          endDate: null,
+          teamId: null,
+          createdAt: "2026-01-02T00:00:00Z",
+          updatedAt: "2026-01-02T00:00:00Z",
+        },
+      ],
+      pagination: { total: 2, page: 1, pageSize: 10, totalPages: 1 },
+    };
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => MOCK_PROJECTS_RESPONSE })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "p2" }) })
+      .mockResolvedValue({ ok: true, json: async () => UPDATED_RESPONSE });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const user = userEvent.setup();
+    render(<ProjectsPage />);
+    await waitFor(() => screen.getByText("Alpha Project"));
+
+    // Open create dialog
+    await user.click(screen.getByRole("button", { name: /new project/i }));
+    await waitFor(() => screen.getByText("Create New Project"));
+
+    // Fill form
+    await user.type(screen.getByLabelText("Project Name"), "Beta Project");
+
+    // Submit
+    await user.click(screen.getByRole("button", { name: /create project/i }));
+
+    // Assert POST was called with the right data
+    await waitFor(() => {
+      const postCall = mockFetch.mock.calls.find(
+        (args) => args[1]?.method === "POST"
+      );
+      expect(postCall).toBeDefined();
+      expect(postCall![0]).toBe("/api/projects");
+      const body = JSON.parse(postCall![1].body);
+      expect(body.name).toBe("Beta Project");
+    });
+
+    // Assert GET was called again after POST (refetch)
+    await waitFor(() => {
+      const getCalls = mockFetch.mock.calls.filter(
+        (args) => !args[1]?.method || args[1]?.method === "GET"
+      );
+      expect(getCalls.length).toBeGreaterThanOrEqual(2);
+    });
+  });
 });
