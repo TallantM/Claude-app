@@ -47,98 +47,40 @@ submits the form, handles client-side search filtering, and shows loading/error 
 
 ## Test Scenarios
 
-### Scenario: Shows loading skeleton while data is fetching
+1. **shows loading skeleton while data is fetching**
+   - Given: `fetch` has not yet resolved
+   - When: IssuesPage renders
+   - Then: skeleton pulse elements are visible; no issue cards are shown yet
 
-**Given**: `fetch` has not yet resolved
-**When**: IssuesPage renders
-**Then**:
-- Skeleton pulse elements are visible
-- No issue cards are shown yet
+2. **renders issue list after data loads**
+   - Given: `fetch` resolves with two issues: "Login button broken" and "Dark mode feature"
+   - When: component finishes loading
+   - Then: "Issues" heading, both issue titles, and "New Issue" button are visible
 
-**Severity**: Normal
-**Tags**: Regression, Loading
+3. **client-side search filters visible issues**
+   - Given: two issues loaded
+   - When: "Login" is typed into the search input
+   - Then: only "Login button broken" is visible; "Dark mode feature" is not visible
 
----
+4. **shows empty state when no issues exist**
+   - Given: `fetch` resolves with `{ data: [], pagination: { total: 0, ... } }`
+   - When: component renders
+   - Then: "No issues found" text is visible; no issue cards are in the DOM
 
-### Scenario: Renders issue list after data loads
+5. **opens create issue dialog on New Issue click**
+   - Given: issue list has loaded
+   - When: "New Issue" button is clicked
+   - Then: "Report New Issue" dialog heading appears with title input, "Create Issue" button, and "Cancel" button
 
-**Given**: `fetch` resolves with two issues: "Login button broken" and "Dark mode feature"
-**When**: Component finishes loading
-**Then**:
-- "Issues" heading is visible
-- "Login button broken" issue title is visible
-- "Dark mode feature" issue title is visible
-- "New Issue" button is visible
+6. **submits new issue form and refreshes list**
+   - Given: create issue dialog is open and "My Bug Report" is typed in the title field
+   - When: "Create Issue" is clicked and `fetch` POST resolves `{ ok: true }`
+   - Then: `fetch` is called with POST to `/api/issues` with body containing `title: "My Bug Report"`; dialog closes; GET is called again
 
-**Severity**: Critical
-**Tags**: Smoke, Render
-
----
-
-### Scenario: Client-side search filters visible issues
-
-**Given**: Two issues loaded: "Login button broken" and "Dark mode feature"
-**When**: "Login" is typed into the search input
-**Then**:
-- Only "Login button broken" is visible
-- "Dark mode feature" is not visible
-
-**Severity**: Normal
-**Tags**: Regression, Search
-
----
-
-### Scenario: Shows empty state when no issues exist
-
-**Given**: `fetch` resolves with `{ data: [], pagination: { total: 0, ... } }`
-**When**: Component renders
-**Then**:
-- "No issues found" text is visible
-- No issue cards are in the DOM
-
-**Severity**: Normal
-**Tags**: Regression, Empty State
-
----
-
-### Scenario: Opens create issue dialog on New Issue click
-
-**Given**: Issue list has loaded
-**When**: "New Issue" button is clicked
-**Then**:
-- "Report New Issue" dialog heading appears
-- Title input is visible inside the dialog
-- "Create Issue" and "Cancel" buttons are in the dialog
-
-**Severity**: Normal
-**Tags**: Regression, Dialog
-
----
-
-### Scenario: Submits new issue form and refreshes list
-
-**Given**: Create issue dialog is open and "My Bug Report" is typed in the title field
-**When**: "Create Issue" is clicked and `fetch` POST resolves `{ ok: true }`
-**Then**:
-- `fetch` is called with POST to `/api/issues`
-- Request body contains `title: "My Bug Report"`
-- Dialog closes after successful submit
-- GET is called again (refetch)
-
-**Severity**: Critical
-**Tags**: Smoke, Create
-
----
-
-### Scenario: Shows error state when fetch fails
-
-**Given**: `fetch` rejects with a network error
-**When**: Component renders
-**Then**:
-- "Error loading issues" message is visible
-
-**Severity**: Normal
-**Tags**: Regression, Error
+7. **shows error state when fetch fails**
+   - Given: `fetch` rejects with a network error
+   - When: component renders
+   - Then: "Error loading issues" message is visible
 
 ---
 

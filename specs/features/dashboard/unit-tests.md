@@ -55,90 +55,35 @@ a real server.
 
 ## Test Scenarios
 
-### Scenario: Shows loading skeleton while data is fetching
+1. **shows loading skeleton while data is fetching**
+   - Given: `fetch` has not yet resolved
+   - When: DashboardPage renders
+   - Then: animated skeleton divs are visible; stat cards and content are not yet rendered
 
-**Given**: `fetch` has not yet resolved
-**When**: DashboardPage renders
-**Then**:
-- Animated skeleton divs are visible
-- Stat cards and content are not yet rendered
+2. **renders all six stat cards after data loads**
+   - Given: `fetch` for `/api/dashboard` resolves with mock data
+   - When: component finishes loading
+   - Then: "Dashboard" heading, and stat cards for Total Projects (5), Total Tasks (42), Completed Tasks (18), Open Issues (7), Active Sprints (2), Team Members (8) are all visible
 
-**Severity**: Normal
-**Tags**: Regression, Loading
+3. **recent activity section is rendered with activity items**
+   - Given: dashboard data loads with one activity item
+   - When: component renders
+   - Then: "Recent Activity" heading, "Created task: Fix login bug" details, and "Alice" user name are visible
 
----
+4. **task distribution section is rendered**
+   - Given: dashboard data loads with task distribution data
+   - When: component renders
+   - Then: "Task Distribution" heading, "To Do", "In Progress", and "Done" labels, and total tasks count (42) are visible
 
-### Scenario: Renders all six stat cards after data loads
+5. **shows no recent activity message when activity list is empty**
+   - Given: dashboard data loads with `recentActivity: []`
+   - When: component renders
+   - Then: "Recent Activity" heading is visible and "No recent activity" message is shown
 
-**Given**: `fetch` for `/api/dashboard` resolves with mock data
-**When**: Component finishes loading
-**Then**:
-- "Dashboard" heading is visible
-- "Total Projects" card shows the value `5`
-- "Total Tasks" card shows `42`
-- "Completed Tasks" card shows `18`
-- "Open Issues" card shows `7`
-- "Active Sprints" card shows `2`
-- "Team Members" card shows `8`
-
-**Severity**: Critical
-**Tags**: Smoke, Render, Stats
-
----
-
-### Scenario: Recent Activity section is rendered
-
-**Given**: Dashboard data loads with one activity item
-**When**: Component renders
-**Then**:
-- "Recent Activity" section heading is visible
-- The activity entry's details text "Created task: Fix login bug" is visible
-- The user name "Alice" is visible in the activity entry
-
-**Severity**: Normal
-**Tags**: Regression, Activity
-
----
-
-### Scenario: Task Distribution section is rendered
-
-**Given**: Dashboard data loads with task distribution data
-**When**: Component renders
-**Then**:
-- "Task Distribution" section heading is visible
-- "To Do" label is visible
-- "In Progress" label is visible
-- "Done" label is visible
-- Total Tasks count is visible (shows 42)
-
-**Severity**: Normal
-**Tags**: Regression, Chart
-
----
-
-### Scenario: Shows no recent activity message when activity list is empty
-
-**Given**: Dashboard data loads with `recentActivity: []`
-**When**: Component renders
-**Then**:
-- "Recent Activity" heading is visible
-- "No recent activity" message is shown
-
-**Severity**: Normal
-**Tags**: Regression, Empty State
-
----
-
-### Scenario: Shows error state when fetch fails
-
-**Given**: `fetch` rejects with a network error
-**When**: DashboardPage renders
-**Then**:
-- "Error loading dashboard" message is visible
-- Stat cards are not rendered
-
-**Severity**: Normal
-**Tags**: Regression, Error
+6. **shows error state when fetch fails**
+   - Given: `fetch` rejects with a network error
+   - When: DashboardPage renders
+   - Then: "Error loading dashboard" message is visible; stat cards are not rendered
 
 ---
 

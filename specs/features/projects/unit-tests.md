@@ -37,97 +37,40 @@ all without a real server.
 
 ## Test Scenarios
 
-### Scenario: Shows loading skeleton while data is fetching
+1. **shows loading skeleton while data is fetching**
+   - Given: `fetch` has not yet resolved
+   - When: ProjectsPage renders
+   - Then: animated skeleton pulse divs are visible; no project cards are shown yet
 
-**Given**: `fetch` has not yet resolved
-**When**: ProjectsPage renders
-**Then**:
-- Animated skeleton elements are visible (pulse divs)
-- No project cards are shown yet
+2. **renders project cards after data loads**
+   - Given: `fetch` for `/api/projects` resolves with one project: "Alpha Project"
+   - When: component finishes loading
+   - Then: "Projects" heading, a card containing "Alpha Project", and "New Project" button are all visible
 
-**Severity**: Normal
-**Tags**: Regression, Loading
+3. **shows empty state when no projects exist**
+   - Given: `fetch` resolves with `{ data: [], pagination: { total: 0, ... } }`
+   - When: component renders
+   - Then: "No projects found" message and "Create Project" button inside the empty state are visible
 
----
+4. **opens create project dialog on button click**
+   - Given: page has loaded with projects
+   - When: "New Project" button is clicked
+   - Then: a dialog with "Create New Project" heading, Project Name input, and "Create Project" submit button appears
 
-### Scenario: Renders project cards after data loads
+5. **closes dialog and resets form on Cancel**
+   - Given: create project dialog is open
+   - When: "Cancel" button is clicked
+   - Then: dialog is no longer visible and name input is removed from the DOM
 
-**Given**: `fetch` for `/api/projects` resolves with one project: "Alpha Project"
-**When**: Component finishes loading
-**Then**:
-- "Projects" heading is visible
-- A card containing "Alpha Project" is rendered
-- "New Project" button is visible
+6. **submits new project form and refreshes list**
+   - Given: dialog is open and "My Test Project" is typed in the name field
+   - When: "Create Project" is clicked and `fetch` POST resolves with `{ ok: true }`
+   - Then: `fetch` is called with POST to `/api/projects` with body containing `name: "My Test Project"`; dialog closes; data re-fetches
 
-**Severity**: Critical
-**Tags**: Smoke, Render
-
----
-
-### Scenario: Shows empty state when no projects exist
-
-**Given**: `fetch` resolves with `{ data: [], pagination: { total: 0, ... } }`
-**When**: Component renders
-**Then**:
-- "No projects found" message is visible
-- "Create Project" button inside the empty state is visible
-
-**Severity**: Normal
-**Tags**: Regression, Empty State
-
----
-
-### Scenario: Opens create project dialog on button click
-
-**Given**: Page has loaded with projects
-**When**: "New Project" button is clicked
-**Then**:
-- A dialog containing "Create New Project" heading appears
-- Project Name input is visible inside the dialog
-- "Create Project" submit button is inside the dialog
-
-**Severity**: Normal
-**Tags**: Regression, Dialog
-
----
-
-### Scenario: Closes dialog and resets form on Cancel
-
-**Given**: Create project dialog is open
-**When**: "Cancel" button is clicked
-**Then**:
-- Dialog is no longer visible
-- Name input no longer shows in the DOM (dialog closed)
-
-**Severity**: Normal
-**Tags**: Regression, Dialog
-
----
-
-### Scenario: Submits new project form and refreshes list
-
-**Given**: Dialog is open and "My Test Project" is typed in the name field
-**When**: "Create Project" button is clicked and `fetch` POST resolves with `{ ok: true }`
-**Then**:
-- `fetch` is called with method POST to `/api/projects`
-- The request body includes `name: "My Test Project"`
-- Dialog closes after successful submit
-- Data re-fetches (fetch called again for GET)
-
-**Severity**: Critical
-**Tags**: Smoke, Create
-
----
-
-### Scenario: Shows error state when fetch fails
-
-**Given**: `fetch` rejects with a network error
-**When**: Component renders
-**Then**:
-- "Error loading projects" message is visible
-
-**Severity**: Normal
-**Tags**: Regression, Error
+7. **shows error state when fetch fails**
+   - Given: `fetch` rejects with a network error
+   - When: component renders
+   - Then: "Error loading projects" message is visible
 
 ---
 

@@ -125,13 +125,15 @@ describe("Scenario coverage", () => {
   it("total unit tests >= total spec scenarios (or logs a warning)", () => {
     const features = getFeatures();
 
-    // Count "### Scenario:" headings across all unit-tests.md files
+    // Count numbered scenario items (e.g. "1. **scenario name**") across all unit-tests.md files.
+    // This format is preferred over prose headers (### Scenario:) because it is machine-countable.
+    // Spec template uses: "1. **scenario description**"
     let totalScenarios = 0;
     for (const feature of features) {
       const specFile = path.join(SPECS_FEATURES_DIR, feature, "unit-tests.md");
       if (fs.existsSync(specFile)) {
         const content = fs.readFileSync(specFile, "utf-8");
-        const matches = content.match(/^### Scenario:/gm);
+        const matches = content.match(/^\d+\.\s+\*\*/gm);
         totalScenarios += matches ? matches.length : 0;
       }
     }
