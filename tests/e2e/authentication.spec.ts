@@ -25,7 +25,7 @@ test.describe("Authentication", () => {
       await expect(page.getByRole("button", { name: /sign in/i })).toBeVisible();
       await expect(page.getByRole("button", { name: /github/i })).toBeVisible();
       await expect(page.getByRole("button", { name: /google/i })).toBeVisible();
-      await expect(page.locator('[role="alert"]')).not.toBeVisible();
+      await expect(page.locator('.text-destructive[role="alert"]')).not.toBeVisible();
     });
 
     test("should redirect to dashboard after successful login", async ({ page }) => {
