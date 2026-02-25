@@ -324,7 +324,10 @@ await loginPage.login("bad", "creds"); // Page Object should not assert
 - E2E tests run in headless Chromium
 
 ### Coverage Target
-- Unit test coverage: 70%+ for tested components
+- Unit test coverage for tested page components: statements ≥70%, functions ≥70%, lines ≥70%, branches ≥55%
+- **In scope** (measured): `src/app/(auth)/login/page.tsx`, `register/page.tsx`, `(app)/dashboard/page.tsx`, `projects/page.tsx`, `issues/page.tsx`
+- **Out of scope** (excluded): layout components, UI primitives, Zustand store, type definitions — no unit-testable business logic; covered by E2E
+- Branch coverage is set lower (55%) because conditional UI paths (pagination, filters) are E2E test scope
 
 ---
 
