@@ -38,10 +38,14 @@ export default defineConfig({
       testMatch: "**/auth.setup.ts",
     },
 
-    // E2E tests that require authentication
+    // E2E tests that require authentication — auth flows are excluded (they run in auth-flows)
     {
       name: "authenticated",
-      testMatch: "**/*.spec.ts",
+      testMatch: [
+        "**/dashboard.spec.ts",
+        "**/projects.spec.ts",
+        "**/issues.spec.ts",
+      ],
       dependencies: ["setup"],
       use: {
         ...devices["Desktop Chrome"],
