@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Search, Bug } from "lucide-react";
@@ -79,6 +79,20 @@ export default function IssuesPage() {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [projects, setProjects] = useState<{ id: string; name: string; key: string }[]>([]);
+  const [projectId, setProjectId] = useState("");
+
+  // Load all projects once so the create form can pre-select the first one
+  useEffect(() => {
+    fetch("/api/projects?pageSize=100")
+      .then((r) => r.json())
+      .then((json) => {
+        const list: { id: string; name: string; key: string }[] = json.data ?? [];
+        setProjects(list);
+        if (list.length > 0) setProjectId(list[0].id);
+      })
+      .catch(() => {});
+  }, []);
 
   const serverParams = useMemo(
     () => ({ status: statusFilter, severity: severityFilter }),
@@ -123,7 +137,7 @@ export default function IssuesPage() {
       const res = await fetch("/api/issues", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...data, projectId }),
       });
       if (!res.ok) throw new Error("Failed to create issue");
       setNewDialogOpen(false);
@@ -428,6 +442,22 @@ export default function IssuesPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Project</Label>
+              <Select value={projectId} onValueChange={setProjectId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projects.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.key} — {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="issue-title">Title</Label>
               <Input

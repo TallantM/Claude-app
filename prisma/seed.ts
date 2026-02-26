@@ -7,7 +7,53 @@ import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
+/**
+ * Delete any projects (and their dependent data) whose key is not in the
+ * known seed set. This prevents E2E-test-created records from conflicting
+ * with the seed's upserts on subsequent runs.
+ */
+async function cleanTestData() {
+  const seedKeys = ["SDLC", "MOBIL", "INFRA"];
+  const testProjects = await prisma.project.findMany({
+    where: { key: { notIn: seedKeys } },
+    select: { id: true },
+  });
+  if (testProjects.length === 0) return;
+
+  const ids = testProjects.map((p) => p.id);
+
+  // Delete child records first (FK constraints), then the projects themselves.
+  await prisma.activity.deleteMany({ where: { projectId: { in: ids } } });
+  await prisma.milestone.deleteMany({ where: { projectId: { in: ids } } });
+  await prisma.label.deleteMany({ where: { projectId: { in: ids } } });
+  await prisma.gitRepo.deleteMany({ where: { projectId: { in: ids } } });
+  await prisma.issue.deleteMany({ where: { projectId: { in: ids } } });
+
+  // Tasks may reference sprints; delete tasks first.
+  const testSprints = await prisma.sprint.findMany({
+    where: { projectId: { in: ids } },
+    select: { id: true },
+  });
+  const sprintIds = testSprints.map((s) => s.id);
+  await prisma.task.deleteMany({ where: { projectId: { in: ids } } });
+  await prisma.sprint.deleteMany({ where: { id: { in: sprintIds } } });
+
+  // PipelineRuns depend on Pipelines.
+  const testPipelines = await prisma.pipeline.findMany({
+    where: { projectId: { in: ids } },
+    select: { id: true },
+  });
+  const pipelineIds = testPipelines.map((p) => p.id);
+  await prisma.pipelineRun.deleteMany({
+    where: { pipelineId: { in: pipelineIds } },
+  });
+  await prisma.pipeline.deleteMany({ where: { id: { in: pipelineIds } } });
+
+  await prisma.project.deleteMany({ where: { id: { in: ids } } });
+}
+
 async function main() {
+  await cleanTestData();
   // ─── Users ───
   // All passwords are intentionally simple — this is demo data only
   const adminPassword = await bcrypt.hash("admin123", 10);
@@ -300,12 +346,12 @@ async function main() {
   const activities = [
     { type: "created", entity: "project", entityId: project1.id, details: "Created project SDLC Hub Platform", userId: admin.id, projectId: project1.id },
     { type: "created", entity: "sprint", entityId: sprint1.id, details: "Started Sprint 1 - Foundation", userId: pm.id, projectId: project1.id },
-    { type: "updated", entity: "task", entityId: "task-1", details: "Moved 'Set up project structure' to Done", userId: dev.id, projectId: project1.id },
+    { type: "updated", entity: "task", entityId: "task-1", details: "Completed: Set up project structure", userId: dev.id, projectId: project1.id },
     { type: "commented", entity: "task", entityId: "task-2", details: "Commented on 'Design database schema'", userId: tester.id, projectId: project1.id },
     { type: "created", entity: "issue", entityId: "issue-1", details: "Reported 'Login page not responsive'", userId: tester.id, projectId: project1.id },
     { type: "updated", entity: "sprint", entityId: sprint2.id, details: "Sprint 2 - Core Features started", userId: pm.id, projectId: project1.id },
     { type: "created", entity: "pipeline", entityId: pipeline1.id, details: "Created CI/CD Pipeline", userId: dev.id, projectId: project1.id },
-    { type: "updated", entity: "task", entityId: "task-5", details: "Moved 'Build dashboard page' to In Review", userId: dev.id, projectId: project1.id },
+    { type: "updated", entity: "task", entityId: "task-5", details: "Submitted for review: Build dashboard page", userId: dev.id, projectId: project1.id },
   ];
 
   for (const activity of activities) {

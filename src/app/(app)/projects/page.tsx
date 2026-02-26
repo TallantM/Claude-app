@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useLayoutEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -98,7 +98,7 @@ export default function ProjectsPage() {
 
   const watchName = watch("name");
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (watchName) {
       setValue("key", generateKey(watchName));
     }
