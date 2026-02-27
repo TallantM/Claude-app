@@ -53,7 +53,7 @@ test.describe("Authentication", () => {
       await loginPage.login("nonexistent@example.com", "wrongpassword");
 
       // Assert
-      await expect(page.locator('[role="alert"]')).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('.text-destructive[role="alert"]')).toBeVisible({ timeout: 10000 });
       const errorText = await loginPage.getErrorMessage();
       expect(errorText).toContain("Invalid email or password");
       await expect(page).toHaveURL("/login");
@@ -97,7 +97,7 @@ test.describe("Authentication", () => {
       // Assert — page stays on /login; RHF + zod shows validation feedback
       await expect(page).toHaveURL("/login");
       await expect(
-        page.getByText("Invalid email address").or(page.locator('[role="alert"]'))
+        page.getByText("Invalid email address").or(page.locator('.text-destructive[role="alert"]'))
       ).toBeVisible({ timeout: 5000 });
     });
   });
@@ -182,7 +182,7 @@ test.describe("Authentication", () => {
       );
 
       // Assert — server returns a conflict error; alert is shown
-      await expect(page.locator('[role="alert"]')).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('.text-destructive[role="alert"]')).toBeVisible({ timeout: 10000 });
       await expect(page).toHaveURL("/register");
     });
   });

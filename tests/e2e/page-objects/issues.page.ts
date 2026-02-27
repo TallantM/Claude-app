@@ -56,7 +56,27 @@ export class IssuesPage {
   }
 
   async createIssue(title: string, description?: string): Promise<void> {
+    // Register listener BEFORE clicking so we don't miss the lazy-loaded
+    // projects response that fires the moment the dialog opens.
+    const projectsLoaded = this.page.waitForResponse(
+      (res) =>
+        res.url().includes("/api/projects") && res.request().method() === "GET",
+      { timeout: 10000 }
+    );
     await this.clickNewIssue();
+    await projectsLoaded;
+
+    // Explicitly open the project combobox and select the first option.
+    // We do this rather than relying on React's async setProjectId commit
+    // because the timing window between the fetch response and the next
+    // React render is not deterministic enough for E2E tests.
+    const projectTrigger = this.page
+      .locator('[role="dialog"] [role="combobox"]')
+      .first();
+    await projectTrigger.click();
+    await this.page.locator('[role="option"]').first().waitFor({ timeout: 5000 });
+    await this.page.locator('[role="option"]').first().click();
+
     await this.page.locator("#issue-title").fill(title);
     if (description) {
       await this.page.locator("#issue-desc").fill(description);

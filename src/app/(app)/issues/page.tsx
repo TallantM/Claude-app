@@ -82,8 +82,10 @@ export default function IssuesPage() {
   const [projects, setProjects] = useState<{ id: string; name: string; key: string }[]>([]);
   const [projectId, setProjectId] = useState("");
 
-  // Load all projects once so the create form can pre-select the first one
+  // Lazy-load projects the first time the create dialog opens so the page
+  // avoids an extra network request on every mount.
   useEffect(() => {
+    if (!newDialogOpen || projects.length > 0) return;
     fetch("/api/projects?pageSize=100")
       .then((r) => r.json())
       .then((json) => {
@@ -92,7 +94,7 @@ export default function IssuesPage() {
         if (list.length > 0) setProjectId(list[0].id);
       })
       .catch(() => {});
-  }, []);
+  }, [newDialogOpen, projects.length]);
 
   const serverParams = useMemo(
     () => ({ status: statusFilter, severity: severityFilter }),

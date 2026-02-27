@@ -18,14 +18,14 @@ export class LoginPage {
   }
 
   async getErrorMessage(): Promise<string | null> {
-    const alert = this.page.locator('[role="alert"]');
+    const alert = this.page.locator('.text-destructive[role="alert"]');
     const visible = await alert.isVisible();
     if (!visible) return null;
     return alert.textContent();
   }
 
   async isErrorVisible(): Promise<boolean> {
-    return this.page.locator('[role="alert"]').isVisible();
+    return this.page.locator('.text-destructive[role="alert"]').isVisible();
   }
 
   async clickRegisterLink(): Promise<void> {
