@@ -5,6 +5,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Disable the dev toolbar so it doesn't inject an empty role="alert" element
+  // into every page — that empty element causes strict-mode violations in E2E tests
+  // that use page.locator('[role="alert"]') expecting exactly one match.
+  devIndicators: false,
   images: {
     // Allow avatar images from GitHub and Google OAuth providers
     remotePatterns: [

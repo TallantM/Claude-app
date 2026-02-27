@@ -67,15 +67,15 @@ function getActivityIcon(type: string) {
 /** Placeholder pulse skeleton matching the stat cards + two-column grid layout. */
 function LoadingSkeleton() {
   return (
-    <div className="space-y-6">
+    <div className="animate-pulse space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-28 rounded-lg bg-muted animate-pulse" />
+          <div key={i} className="h-28 rounded-lg bg-muted" />
         ))}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="h-96 rounded-lg bg-muted animate-pulse" />
-        <div className="h-96 rounded-lg bg-muted animate-pulse" />
+        <div className="h-96 rounded-lg bg-muted" />
+        <div className="h-96 rounded-lg bg-muted" />
       </div>
     </div>
   );
@@ -95,7 +95,7 @@ export default function DashboardPage() {
         const res = await fetch("/api/dashboard");
         if (!res.ok) throw new Error("Failed to fetch dashboard data");
         const json = await res.json();
-        setData(json.data);
+        setData(json);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
       } finally {
@@ -233,7 +233,7 @@ export default function DashboardPage() {
             </div>
             <div className="mt-6 pt-4 border-t">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Total Tasks</span>
+                <span className="text-muted-foreground">Tasks</span>
                 <span className="font-semibold">{data.stats.totalTasks}</span>
               </div>
               <div className="flex items-center justify-between text-sm mt-1">

@@ -90,7 +90,7 @@ export async function POST(request: Request) {
         type: validated.type,
         reproSteps: validated.reproSteps?.trim(),
         projectId,
-        assigneeId: validated.assigneeId,
+        assigneeId: validated.assigneeId || null,
         creatorId: session.user.id,
       },
       include: {
