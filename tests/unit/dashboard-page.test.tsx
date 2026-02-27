@@ -3,32 +3,30 @@ import { render, screen, waitFor } from "@testing-library/react";
 import DashboardPage from "@/app/(app)/dashboard/page";
 
 const MOCK_DASHBOARD_RESPONSE = {
-  data: {
-    stats: {
-      totalProjects: 5,
-      totalTasks: 42,
-      completedTasks: 18,
-      openIssues: 7,
-      activeSprints: 2,
-      teamMembers: 8,
-    },
-    recentActivity: [
-      {
-        id: "1",
-        type: "created",
-        entity: "task",
-        details: "Created task: Fix login bug",
-        createdAt: "2026-01-10T10:00:00Z",
-        user: { name: "Alice", image: null },
-      },
-    ],
-    taskDistribution: [
-      { label: "todo", value: 15 },
-      { label: "in_progress", value: 9 },
-      { label: "in_review", value: 0 },
-      { label: "done", value: 18 },
-    ],
+  stats: {
+    totalProjects: 5,
+    totalTasks: 42,
+    completedTasks: 18,
+    openIssues: 7,
+    activeSprints: 2,
+    teamMembers: 8,
   },
+  recentActivity: [
+    {
+      id: "1",
+      type: "created",
+      entity: "task",
+      details: "Created task: Fix login bug",
+      createdAt: "2026-01-10T10:00:00Z",
+      user: { name: "Alice", image: null },
+    },
+  ],
+  taskDistribution: [
+    { label: "todo", value: 15 },
+    { label: "in_progress", value: 9 },
+    { label: "in_review", value: 0 },
+    { label: "done", value: 18 },
+  ],
 };
 
 describe("DashboardPage", () => {
@@ -53,8 +51,7 @@ describe("DashboardPage", () => {
     await waitFor(() => {
       expect(screen.getByText("Total Projects")).toBeInTheDocument();
     });
-    // "Total Tasks" appears twice (stat card + task distribution summary)
-    expect(screen.getAllByText("Total Tasks").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("Total Tasks")).toBeInTheDocument();
     expect(screen.getByText("Completed Tasks")).toBeInTheDocument();
     expect(screen.getByText("Open Issues")).toBeInTheDocument();
     expect(screen.getByText("Active Sprints")).toBeInTheDocument();
@@ -128,10 +125,8 @@ describe("DashboardPage", () => {
   it("should show empty activity message when no activity exists", async () => {
     // Arrange
     const emptyResponse = {
-      data: {
-        ...MOCK_DASHBOARD_RESPONSE.data,
-        recentActivity: [],
-      },
+      ...MOCK_DASHBOARD_RESPONSE,
+      recentActivity: [],
     };
     vi.stubGlobal(
       "fetch",

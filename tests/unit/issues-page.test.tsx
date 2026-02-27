@@ -230,10 +230,27 @@ describe("IssuesPage", () => {
       data: [...MOCK_ISSUES_RESPONSE.data, NEW_ISSUE],
       pagination: { total: 3, page: 1, pageSize: 10, totalPages: 1 },
     };
-    const mockFetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, json: async () => MOCK_ISSUES_RESPONSE })
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "i3" }) })
-      .mockResolvedValue({ ok: true, json: async () => UPDATED_RESPONSE });
+    // URL-aware mock: IssuesPage now makes a separate /api/projects fetch on mount
+    // for the create-issue dialog's project selector.  Route responses by URL so
+    // the projects fetch doesn't consume the issues mock slot.
+    let issueGetCount = 0;
+    const mockFetch = vi.fn().mockImplementation(
+      (url: string, options?: RequestInit) => {
+        if (String(url).startsWith("/api/projects")) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ data: [], pagination: {} }),
+          });
+        }
+        if (options?.method === "POST") {
+          return Promise.resolve({ ok: true, json: async () => ({ id: "i3" }) });
+        }
+        // GET /api/issues — first call: initial list; subsequent calls: updated list
+        issueGetCount++;
+        const response = issueGetCount === 1 ? MOCK_ISSUES_RESPONSE : UPDATED_RESPONSE;
+        return Promise.resolve({ ok: true, json: async () => response });
+      }
+    );
     vi.stubGlobal("fetch", mockFetch);
 
     const user = userEvent.setup();
