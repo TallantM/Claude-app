@@ -232,3 +232,19 @@ Before this engagement is complete, verify ALL of the following:
 - [ ] `npm run test:conformance` — all conformance tests pass
 - [ ] `npm run test:e2e` — all E2E tests pass (seed DB first)
 - [ ] First CI run passes on push
+
+---
+
+## Commit Integrity
+
+Before writing a commit message that claims tests pass, run the full test suite **after your last change**:
+
+```bash
+npm test
+npm run test:e2e
+```
+
+Rules:
+- If you changed app code and test code in separate steps, re-run both suites after the final step — not after each individual step.
+- App code changes that break existing tests must be committed atomically with the corresponding test fix. Never push a commit where the app change and the test fix are split across two commits; the intermediate state will fail CI.
+- CI is not a substitute for local verification. Your commit message reflects what you confirmed in your terminal, not what you expect CI to confirm after the push.
