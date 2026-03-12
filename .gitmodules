@@ -1,0 +1,3 @@
+[submodule "sdd-framework"]
+	path = sdd-framework
+	url = https://github.com/TallantM/sdd-template.git
