@@ -51,7 +51,8 @@ describe("DashboardPage", () => {
     await waitFor(() => {
       expect(screen.getByText("Total Projects")).toBeInTheDocument();
     });
-    expect(screen.getByText("Total Tasks")).toBeInTheDocument();
+    // "Total Tasks" also appears in the task distribution footer — use getAllByText
+    expect(screen.getAllByText("Total Tasks").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("Completed Tasks")).toBeInTheDocument();
     expect(screen.getByText("Open Issues")).toBeInTheDocument();
     expect(screen.getByText("Active Sprints")).toBeInTheDocument();

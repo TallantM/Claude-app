@@ -8,14 +8,8 @@ const AUTH_FILE = path.join(__dirname, ".auth/user.json");
  * All "authenticated" tests use this saved state to avoid re-logging in.
  */
 setup("authenticate as test user", async ({ page }) => {
-  const email = process.env.TEST_USER_EMAIL;
-  const password = process.env.TEST_USER_PASSWORD;
-
-  if (!email || !password) {
-    throw new Error(
-      "TEST_USER_EMAIL and TEST_USER_PASSWORD must be set in .env.test"
-    );
-  }
+  const email = process.env.TEST_USER_EMAIL ?? "tester@sdlchub.com";
+  const password = process.env.TEST_USER_PASSWORD ?? "test1234";
 
   await page.goto("/login");
   await page.fill("#email", email);

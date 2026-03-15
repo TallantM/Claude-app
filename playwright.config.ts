@@ -45,6 +45,13 @@ export default defineConfig({
         "**/dashboard.spec.ts",
         "**/projects.spec.ts",
         "**/issues.spec.ts",
+        "**/project-detail.spec.ts",
+        "**/pipelines.spec.ts",
+        "**/repos.spec.ts",
+        "**/team.spec.ts",
+        "**/settings.spec.ts",
+        "**/notifications.spec.ts",
+        "**/reports.spec.ts",
       ],
       dependencies: ["setup"],
       use: {
