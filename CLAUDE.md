@@ -1,234 +1,126 @@
-# SDLC Hub — Test Automation (Spec-Driven Development)
+# sdlc-hub — SDD Experiment Project
 
-## Start Here
-
-You are implementing test automation for **sdlc-hub** using the **Spec-Driven Development (SDD)** methodology.
-
-**Before writing any code, read these documents in order:**
-1. `sdd-framework/specs/META-FRAMEWORK.md` — The complete SDD process (read the whole thing)
-2. `sdd-framework/README.md` — Template overview and usage guide
-3. `sdd-framework/docs/agent-patterns.md` — How to use AI to generate code from specs
+## Behavior Directive
+Do NOT ask for confirmation before editing files, running tests, installing packages, or making commits. Proceed autonomously. Only pause for destructive/remote actions: force-push, DB reset, deleting branches, or anything affecting shared remote state.
 
 ---
 
-## About This Application
+## What This Project Is
 
-**sdlc-hub** is a Software Development Lifecycle management platform — a centralized hub for managing projects, tasks, issues, sprints, CI/CD pipelines, and team collaboration.
+**sdlc-hub** is a Software Development Lifecycle management platform (Next.js 14, TypeScript, Prisma/SQLite, NextAuth v4).
 
-### Key Features
-- **Authentication** — Email/password login + OAuth (GitHub, Google)
-- **Projects** — Kanban board (To Do → In Progress → In Review → Done), task management, sprint planning
-- **Issues** — Bug tracker and feature requests with severity, status, assignee
-- **Sprints** — Time-boxed iterations (planning, active, completed)
-- **Pipelines** — CI/CD pipeline viewer with stages and run history
-- **Team** — Member management with roles (admin, project_manager, developer, tester, viewer)
-- **Notifications** — In-app notification center
-- **Dashboard** — Stats, activity feed, charts
-- **Repos** — Git repository tracker
+This repo is used to run **controlled SDD (Spec-Driven Development) experiments** — each "run" generates specs + tests using AI agents, then measures quality metrics.
 
-### Pages
+---
 
-**Protected (require auth):**
-| Route | Description |
-|-------|-------------|
-| `/dashboard` | Stats, activity feed, task distribution chart |
-| `/projects` | Paginated project list with search/filter |
-| `/projects/[id]` | Kanban board, sprints, tasks, milestones |
-| `/issues` | Issue tracker with project/status/severity filters |
-| `/pipelines` | CI/CD pipeline viewer with run history |
-| `/team` | Team members and role management |
-| `/notifications` | In-app notification center |
-| `/repos` | Git repository tracker |
-| `/settings` | User settings (placeholder) |
-| `/reports` | Analytics (placeholder) |
+## Current State: Run-6 Ready
 
-**Public (auth pages):**
-| Route | Description |
-|-------|-------------|
-| `/login` | Email/password login form |
-| `/register` | New user registration |
+5 runs complete. Run-6 is next.
+
+| Run | Branch | Unit | Conformance | E2E (post-fix) | E2E (first-pass) | Notes |
+|-----|--------|------|-------------|----------------|-------------------|-------|
+| 1 | `qa` | 34/34 | 5/5 | 37/37 (100%) | — | 4/11 features |
+| 2 | `experiment/run-2` | 102/102 | 44/44 | 35/53 (66%) | — | 11/11 features |
+| 3 | `experiment/run-3` | 108/108 | 57/57 | 52/56 (93%) | — | 7 app bugs found |
+| 4 | `experiment/run-4` | 95/95 | 61/61 | 54/72 (75%) | 49/72 (68%) | 7 bugs confirmed again |
+| 5 | `experiment/run-5` | 144/144 | 61/61 | 64/69 (93%) | 52/69 (75%) | All bugs fixed; 3-tier arch |
+
+Post-mortems: `docs/experiment-run-{N}-postmortem.md`
+
+### Run-6 Goals
+- Add patterns 14–18 to `sdd-framework/stacks/nextjs-vitest-playwright.md` (pre-flight)
+- Investigate 2 remaining failures: `projects.spec.ts` create-dialog not closing after submission
+- Target: **100% first-pass** (18 patterns pre-baked)
+
+### Branch Convention
+```bash
+git checkout main
+git checkout -b experiment/run-6
+```
+
+---
+
+## Three-Tier Framework Architecture
+
+| Tier | File | Purpose |
+|------|------|---------|
+| 1 — Core | `sdd-framework/docs/agent-patterns.md` | Agent prompts, framework process — zero tech references |
+| 2 — Stack | `sdd-framework/stacks/nextjs-vitest-playwright.md` | 13+ reusable patterns for Next.js + Vitest + Playwright |
+| 3 — Project | `docs/sdd-project-patterns.md` | sdlc-hub specifics: testids, credentials, routes |
+
+**When generating tests, the code-gen agent reads all three tiers.**
+
+---
+
+## Running Tests
+
+```bash
+# Seed database first (required before E2E)
+npm run db:seed
+
+# Unit tests
+npm test
+
+# Conformance tests (separate config — node environment)
+npm run test:conformance
+
+# E2E tests — REQUIRES dev server running in a separate terminal
+# Terminal 1:
+npm run dev
+# Terminal 2:
+npm run test:e2e
+```
+
+---
+
+## App Overview
 
 ### Tech Stack
-| Layer | Technology | Version |
-|-------|-----------|---------|
-| Framework | Next.js (App Router) | 15 |
-| Language | TypeScript | 5.7 |
-| UI | React, Radix UI, Tailwind CSS | 19 |
-| Auth | NextAuth (JWT, credentials + OAuth) | 4.24 |
-| Database | Prisma ORM + SQLite | 6.3 |
-| State | Zustand | 5 |
-| Forms | React Hook Form + Zod | — |
-| Icons | Lucide React | — |
-| Charts | Chart.js + react-chartjs-2 | — |
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 14 App Router |
+| Language | TypeScript 5 |
+| UI | React 18, Radix UI, Tailwind CSS, shadcn/ui |
+| Auth | NextAuth v4 (credentials + OAuth), login at `/login` |
+| Database | Prisma ORM + SQLite (`prisma/dev.db`) |
+| Forms | React Hook Form + Zod |
+| Test: Unit | Vitest + React Testing Library |
+| Test: E2E | Playwright |
 
-**Dev server:** `npm run dev` → http://localhost:3000
+### Key Routes
+| Route | Description |
+|-------|-------------|
+| `/login` | Login (NOT `/api/auth/signin`) |
+| `/register` | Registration |
+| `/dashboard` | Stats, activity feed |
+| `/projects` | Project list |
+| `/projects/[id]` | Kanban board (spec name: `project-detail`) |
+| `/issues` | Issue tracker |
+| `/pipelines` | CI/CD pipelines |
+| `/team` | Team members |
+| `/notifications` | Notifications |
+| `/repos` | Git repos |
+| `/settings` | User settings |
+| `/reports` | Analytics |
+
+Route group `src/app/(app)/` — `(app)` is NOT part of the URL.
+
+### Test Credentials
+| Account | Email | Password |
+|---------|-------|----------|
+| Tester | `tester@sdlchub.com` | `test1234` |
+| Admin | `admin@sdlchub.com` | `admin123` |
 
 ### Key Source Files
 | Path | Contents |
 |------|----------|
-| `src/app/` | All Next.js pages and API routes |
-| `src/components/` | UI components (layout/, ui/ primitives) |
-| `src/lib/auth.ts` | NextAuth configuration |
-| `src/lib/pagination.ts` | Reusable pagination utilities |
-| `src/lib/validations.ts` | Zod schemas for all inputs |
-| `src/hooks/use-pagination.ts` | Generic data-fetching hook |
-| `src/store/` | Zustand global state stores |
-| `src/types/` | TypeScript types, interfaces, enums |
-| `prisma/schema.prisma` | Full database schema |
-| `CODING_STANDARDS.md` | Code style conventions (follow these) |
-
----
-
-## Your Task: Implement Tests Using SDD
-
-Follow the SDD workflow documented in `sdd-framework/specs/META-FRAMEWORK.md`. Here is the order of operations:
-
-### Step 1 — Understand the App
-Read the source code to understand what to test:
-- `src/app/` — pages and API routes
-- `src/components/` — UI components
-- `prisma/schema.prisma` — database models
-- `CODING_STANDARDS.md` — code style to follow in tests
-
-### Step 2 — Create `specs/PROJECT-SPEC.md`
-- Copy `sdd-framework/specs/PROJECT-SPEC.template.md` → `specs/PROJECT-SPEC.md`
-- Fill in all `[PLACEHOLDER]` fields for the **TypeScript + Playwright** stack
-- Use `sdd-framework/specs/PROJECT-SPEC.csharp-example.md` as a reference for depth and structure
-- Adapt patterns to TypeScript/Playwright conventions
-
-### Step 3 — Write Feature Specs
-Create feature specs in `specs/features/[feature-name]/` using templates from `sdd-framework/specs/templates/`:
-
-| Template | Use For |
-|----------|---------|
-| `page-objects.template.md` | Define page interactions (selectors, actions, return values) |
-| `unit-tests.template.md` | Define unit test scenarios |
-| `integration-tests.template.md` | Define integration test scenarios |
-| `workflows.template.md` | Define E2E workflow scenarios |
-
-**Implement specs for these features in order:**
-1. `authentication` — login flow, register flow, auth redirects, logout
-2. `projects` — list with pagination, create project, view Kanban board
-3. `issues` — list with filters, create issue, update status
-4. `dashboard` — stats display, activity feed, auth guard
-
-Use `sdd-framework/specs/examples/` as reference — these are C# but show the expected structure and level of detail. Adapt to TypeScript patterns.
-
-### Step 4 — Implement Tests
-Generate and implement tests from your specs.
-
-**Test Stack:**
-| Type | Framework | Location |
-|------|-----------|----------|
-| E2E (browser) | Playwright + TypeScript | `tests/e2e/` |
-| Unit (components) | Vitest + React Testing Library | `tests/unit/` |
-
-**Install dependencies:**
-```bash
-# E2E tests
-npm install --save-dev @playwright/test
-npx playwright install --with-deps chromium
-
-# Unit tests
-npm install --save-dev vitest @vitejs/plugin-react @testing-library/react @testing-library/user-event jsdom @vitest/coverage-v8
-```
-
-**Config files to create:**
-- `playwright.config.ts` — E2E config (baseURL: http://localhost:3000, headless, retries in CI)
-- `vitest.config.ts` — Unit test config (jsdom environment, React plugin)
-
-**E2E Architecture (Page Object Model):**
-- One Page Object class per page/feature
-- Page objects in `tests/e2e/page-objects/`
-- E2E test files in `tests/e2e/`
-- Follow the POM structure in your specs
-
-**Test Scripts to add to package.json:**
-```json
-{
-  "test": "vitest",
-  "test:e2e": "playwright test",
-  "test:e2e:ui": "playwright test --ui",
-  "test:coverage": "vitest --coverage"
-}
-```
-
-### Step 5 — Sync Specs with Code
-After each feature's implementation:
-- Update the spec to reflect the approved implementation
-- Keep specs and code in sync (SDD principle)
-- Commit specs and tests together
-
----
-
-## Code Standards for Tests
-
-Follow `CODING_STANDARDS.md`. Key points for test code:
-- TypeScript everywhere — no `any`
-- camelCase for functions/variables, PascalCase for classes/interfaces
-- Descriptive test names that read like sentences: `"should redirect to dashboard after successful login"`
-- Arrange-Act-Assert structure in every test
-- No hardcoded credentials — use a `.env.test` file or test fixtures
-- Page Objects: one file per page, constructor accepts `Page` from Playwright
-
----
-
-## SDD Framework Reference
-
-`sdd-framework/` is a **git submodule** pointing to the reusable SDD template repo.
-
-> **Do not modify files inside `sdd-framework/`** — it's a shared template used across projects.
-> To update to the latest template version: `git submodule update --remote sdd-framework`
-
-| Document | Purpose |
-|----------|---------|
-| `sdd-framework/specs/META-FRAMEWORK.md` | Complete SDD workflow — read this first |
-| `sdd-framework/specs/PROJECT-SPEC.template.md` | Template to create your PROJECT-SPEC.md |
-| `sdd-framework/specs/PROJECT-SPEC.csharp-example.md` | Real filled-out example for reference |
-| `sdd-framework/specs/templates/` | Spec templates for each artifact type |
-| `sdd-framework/specs/examples/` | Complete C# example specs (6 features) |
-| `sdd-framework/docs/agent-patterns.md` | AI prompts for spec/code generation |
-| `sdd-framework/docs/test-architecture-spec.md` | Architecture patterns and anti-patterns |
-| `sdd-framework/docs/retrospective-parallel-tests.md` | Real lessons from C# implementation |
-
----
-
-## Final Audit — Required Before Declaring Done
-
-Before committing, walk through EVERY spec scenario:
-
-For each feature in `specs/features/`:
-1. Open `unit-tests.md` — list every scenario heading
-2. Open the corresponding test file — confirm each scenario has a test
-3. Open `workflows.md` — list every workflow
-4. Open the corresponding `.spec.ts` — confirm each workflow has a test
-
-If any scenario is missing a test: write it now.
-**This step is not optional.**
-
----
-
-## Definition of Done
-
-Before this engagement is complete, verify ALL of the following:
-
-### Required Files
-- [ ] `specs/PROJECT-SPEC.md` — filled out for this tech stack
-- [ ] `specs/features/[feature]/` — all 4 spec files per feature
-- [ ] `.env.test.example` — documents all required test environment variables
-- [ ] `playwright.config.ts` — includes Allure reporter
-- [ ] `.github/workflows/ci.yml` — runs unit + conformance + E2E on every push
-- [ ] `tests/conformance/spec-conformance.test.ts` — validates spec-code alignment
-
-### Required Scripts in package.json
-- [ ] `test` — unit tests (vitest)
-- [ ] `test:e2e` — E2E tests (playwright)
-- [ ] `test:conformance` — spec-code alignment check
-- [ ] `test:e2e:report` — generate and open Allure report
-- [ ] `test:coverage` — unit test coverage
-
-### Required: All Tests Must Pass
-- [ ] `npm test` — all unit tests pass
-- [ ] `npm run test:conformance` — all conformance tests pass
-- [ ] `npm run test:e2e` — all E2E tests pass (seed DB first)
-- [ ] First CI run passes on push
+| `src/app/` | Pages and API routes |
+| `src/components/` | UI components |
+| `src/lib/auth.ts` | NextAuth config |
+| `src/lib/validations.ts` | Zod schemas |
+| `prisma/schema.prisma` | DB schema |
+| `specs/features/` | SDD spec files (4 per feature) |
+| `tests/unit/` | Vitest unit tests |
+| `tests/e2e/` | Playwright E2E tests |
+| `tests/conformance/` | Spec-code alignment tests |
+| `docs/sdd-project-patterns.md` | Tier 3 patterns (testids, routes, known pitfalls) |
