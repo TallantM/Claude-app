@@ -2,7 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { User, Palette, Shield, Moon, Sun, Monitor, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +21,13 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const [saving, setSaving] = useState(false);
   const [profileName, setProfileName] = useState(session?.user?.name || "");
+
+  // Sync profile name when session loads asynchronously (NextAuth client hydrates after mount)
+  useEffect(() => {
+    if (session?.user?.name) {
+      setProfileName(session.user.name);
+    }
+  }, [session?.user?.name]);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");

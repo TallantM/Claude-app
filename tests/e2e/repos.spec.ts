@@ -39,14 +39,15 @@ test.describe("Repos", () => {
     // Act
     await reposPage.clickConnectRepoBtn();
     await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('text=Connect Repository')).toBeVisible();
+    await expect(page.locator('[role="dialog"] h2:has-text("Connect Repository")')).toBeVisible();
     await page.fill("#repo-name", repoName);
     await page.fill("#repo-url", `https://github.com/org/${repoName}`);
     await page.click('button[type="submit"]:has-text("Connect Repository")');
 
     // Assert
     await expect(page.locator('[role="dialog"]')).not.toBeVisible({ timeout: 10000 });
-    await expect(page.locator(`text=${repoName}`)).toBeVisible({ timeout: 10000 });
+    // Use heading role to avoid strict-mode violation (repo name also appears in the URL span)
+    await expect(page.getByRole("heading", { name: repoName })).toBeVisible({ timeout: 10000 });
   });
 
   test("3. empty state renders when no repos connected (conditional skip if DB seeded)", async ({ page }) => {
@@ -81,7 +82,8 @@ test.describe("Repos", () => {
 
     // Assert — Pattern 4: no exact count assertions
     const firstCard = page.locator('[data-testid="repo-card"]').first();
-    const providerBadge = firstCard.locator('text=/GitHub|GitLab|Bitbucket/i');
+    // Use nth(0) to avoid strict-mode violation when both badge and URL contain the provider name
+    const providerBadge = firstCard.locator('text=/GitHub|GitLab|Bitbucket/i').first();
     await expect(providerBadge).toBeVisible({ timeout: 5000 });
   });
 

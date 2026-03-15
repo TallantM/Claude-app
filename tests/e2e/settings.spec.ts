@@ -26,8 +26,10 @@ test.describe("Settings", () => {
     const settingsPage = new SettingsPage(page);
     await settingsPage.navigate();
 
-    // Assert
+    // Assert — wait for session to hydrate and pre-fill the input (useEffect syncs on session load)
     await expect(page.locator('[data-testid="profile-name-input"]')).toBeVisible();
+    // Poll until the session-driven value appears (NextAuth client hydrates after mount)
+    await expect(page.locator('[data-testid="profile-name-input"]')).not.toHaveValue("", { timeout: 10000 });
     const value = await settingsPage.getProfileNameValue();
     expect(value.length).toBeGreaterThan(0);
   });

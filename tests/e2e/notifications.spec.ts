@@ -16,6 +16,8 @@ test.describe("Notifications", () => {
 
     // Assert
     await expect(page.locator('h1:has-text("Notifications")')).toBeVisible();
+    // Wait for loading skeletons to disappear before checking content
+    await page.waitForSelector('.animate-pulse', { state: 'hidden', timeout: 10000 }).catch(() => {});
     // Either notification items or "No notifications" empty state
     const hasItems = (await page.locator('div[role="button"]').count()) > 0;
     const hasEmpty = (await page.locator('text=No notifications').count()) > 0;

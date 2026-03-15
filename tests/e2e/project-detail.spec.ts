@@ -11,7 +11,7 @@ test.describe("Project Detail", () => {
   test("1. kanban board renders with all four columns", async ({ page }) => {
     // Arrange — navigate to projects list, then click first project
     const projectsPage = new ProjectsPage(page);
-    await projectsPage.navigate();
+    await projectsPage.navigateTo();
     await page.waitForSelector('[data-testid="project-card"]', { timeout: 10000 });
 
     // Act
@@ -28,7 +28,7 @@ test.describe("Project Detail", () => {
   test("2. add a new task via the Board tab Add task button", async ({ page }) => {
     // Arrange — navigate to first project
     const projectsPage = new ProjectsPage(page);
-    await projectsPage.navigate();
+    await projectsPage.navigateTo();
     await page.waitForSelector('[data-testid="project-card"]', { timeout: 10000 });
     await page.locator('[data-testid="project-card"]').first().click();
     await page.waitForSelector('[data-testid="kanban-col-todo"]', { timeout: 10000 });
@@ -56,7 +56,7 @@ test.describe("Project Detail", () => {
   test("3. clicking task card opens task detail dialog", async ({ page }) => {
     // Arrange — navigate to first project that has tasks
     const projectsPage = new ProjectsPage(page);
-    await projectsPage.navigate();
+    await projectsPage.navigateTo();
     await page.waitForSelector('[data-testid="project-card"]', { timeout: 10000 });
     await page.locator('[data-testid="project-card"]').first().click();
     await page.waitForSelector('[data-testid="kanban-col-todo"]', { timeout: 10000 });
@@ -70,20 +70,21 @@ test.describe("Project Detail", () => {
 
     // Act
     const firstTask = taskCards.first();
-    const taskTitle = await firstTask.textContent();
+    // Read the task title from the h4 inside the card (not full card textContent)
+    const taskTitle = await firstTask.locator("h4").textContent();
     await firstTask.click();
 
     // Assert
     await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 5000 });
     if (taskTitle) {
-      await expect(page.locator('[role="dialog"]')).toContainText(taskTitle.trim().slice(0, 20));
+      await expect(page.locator('[role="dialog"]')).toContainText(taskTitle.trim());
     }
   });
 
   test("4. back button navigates to /projects list", async ({ page }) => {
     // Arrange — navigate to first project
     const projectsPage = new ProjectsPage(page);
-    await projectsPage.navigate();
+    await projectsPage.navigateTo();
     await page.waitForSelector('[data-testid="project-card"]', { timeout: 10000 });
     await page.locator('[data-testid="project-card"]').first().click();
     await page.waitForSelector('[data-testid="back-to-projects"]', { timeout: 10000 });
@@ -102,7 +103,7 @@ test.describe("Project Detail", () => {
   test("5. Sprints tab is accessible and renders sprint content", async ({ page }) => {
     // Arrange
     const projectsPage = new ProjectsPage(page);
-    await projectsPage.navigate();
+    await projectsPage.navigateTo();
     await page.waitForSelector('[data-testid="project-card"]', { timeout: 10000 });
     await page.locator('[data-testid="project-card"]').first().click();
     await page.waitForSelector('[data-testid="kanban-col-todo"]', { timeout: 10000 });
@@ -110,8 +111,8 @@ test.describe("Project Detail", () => {
     // Act
     await page.getByRole("tab", { name: /sprints/i }).click();
 
-    // Assert
-    await expect(page.locator('[role="tabpanel"]').last()).toBeVisible({ timeout: 5000 });
+    // Assert — wait for the active tabpanel (Radix hides inactive ones)
+    await expect(page.locator('[role="tabpanel"][data-state="active"]')).toBeVisible({ timeout: 5000 });
     // Either a sprint card or "No sprints yet" message
     const sprintContent = page.locator('text=/sprint|No sprints yet/i');
     await expect(sprintContent.first()).toBeVisible({ timeout: 5000 });

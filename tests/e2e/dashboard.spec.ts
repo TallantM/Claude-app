@@ -26,13 +26,14 @@ test.describe("Dashboard", () => {
     const dashboardPage = new DashboardPage(page);
     await dashboardPage.navigateTo();
 
-    // Assert — all stat card labels are visible
-    await expect(page.locator("text=Total Projects")).toBeVisible();
-    await expect(page.locator("text=Total Tasks")).toBeVisible();
-    await expect(page.locator("text=Completed Tasks")).toBeVisible();
-    await expect(page.locator("text=Open Issues")).toBeVisible();
-    await expect(page.locator("text=Active Sprints")).toBeVisible();
-    await expect(page.locator("text=Team Members")).toBeVisible();
+    // Assert — all stat card labels are visible (use heading role to avoid strict-mode
+    // violation when "Total Tasks" also appears in the Task Distribution section)
+    await expect(page.getByRole("heading", { name: "Total Projects" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Total Tasks" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Completed Tasks" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Open Issues" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Active Sprints" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Team Members" })).toBeVisible();
   });
 
   test("should display Recent Activity section", async ({ page }) => {
@@ -49,12 +50,13 @@ test.describe("Dashboard", () => {
     const dashboardPage = new DashboardPage(page);
     await dashboardPage.navigateTo();
 
-    // Assert
+    // Assert — scope to the Task Distribution card to avoid strict-mode violations
     await expect(page.locator('text=Task Distribution')).toBeVisible();
-    await expect(page.locator('text=To Do')).toBeVisible();
-    await expect(page.locator('text=In Progress')).toBeVisible();
-    await expect(page.locator('text=Done')).toBeVisible();
-    await expect(page.locator('text=Total Tasks')).toBeVisible();
+    await expect(page.locator('[data-testid="task-dist-todo"]')).toBeVisible();
+    await expect(page.locator('[data-testid="task-dist-in-progress"]')).toBeVisible();
+    await expect(page.locator('[data-testid="task-dist-done"]')).toBeVisible();
+    // "Total Tasks" appears in both stat cards and task distribution — check via span
+    await expect(page.locator('span.text-muted-foreground:has-text("Total Tasks")')).toBeVisible();
   });
 
   test("should show stat card numeric values after data loads", async ({ page }) => {

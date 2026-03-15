@@ -35,8 +35,8 @@ test.describe("Authentication", () => {
 
       // Act
       await loginPage.login(
-        process.env.TEST_USER_EMAIL!,
-        process.env.TEST_USER_PASSWORD!
+        process.env.TEST_USER_EMAIL ?? "tester@sdlchub.com",
+        process.env.TEST_USER_PASSWORD ?? "test1234"
       );
 
       // Assert
