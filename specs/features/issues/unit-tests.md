@@ -1,92 +1,50 @@
-# Issues — Unit Test Specification
+# Unit Tests — issues
 
-## Test Suite Overview
+1. **shows loading skeleton while fetch is pending**
+   - Mock `fetch` with never-resolving promise
+   - Render `IssuesPage`
+   - Assert animate-pulse skeleton elements visible
+   - Assert no `[data-testid="issue-card"]` rendered
 
-**Test File**: `tests/unit/issues-page.test.tsx`
-**What We're Testing**: IssuesPage React component in isolation
-**Test Type**: Unit Tests (Vitest + React Testing Library)
-**Framework**: `describe("IssuesPage", () => { ... })`
-
-### Purpose
-Validate that IssuesPage renders correctly, displays issue data, opens the create dialog,
-submits the form, handles client-side search filtering, and shows loading/error states.
-
----
-
-## Test Configuration
-
-**Environment**: jsdom
-**Mocks Required**:
-- `global.fetch` → mock `/api/issues` GET and POST
-- `next/navigation` → not needed (issues page doesn't navigate away)
-
-**Mock API Response** (for GET /api/issues):
-```json
-{
-  "data": [
-    {
-      "id": "1", "title": "Login button broken", "status": "open",
-      "severity": "high", "type": "bug", "description": "Cannot log in",
-      "reproSteps": null, "projectId": "p1", "assigneeId": null, "reporterId": "u1",
-      "createdAt": "2026-01-01T00:00:00Z", "updatedAt": "2026-01-01T00:00:00Z",
-      "project": { "id": "p1", "name": "Alpha", "key": "AL" }
-    },
-    {
-      "id": "2", "title": "Dark mode feature", "status": "in_progress",
-      "severity": "medium", "type": "feature", "description": null,
-      "reproSteps": null, "projectId": "p1", "assigneeId": null, "reporterId": "u1",
-      "createdAt": "2026-01-02T00:00:00Z", "updatedAt": "2026-01-02T00:00:00Z",
-      "project": { "id": "p1", "name": "Alpha", "key": "AL" }
-    }
-  ],
-  "pagination": { "total": 2, "page": 1, "pageSize": 10, "totalPages": 1 }
-}
-```
-
----
-
-## Test Scenarios
-
-1. **shows loading skeleton while data is fetching**
-   - Given: `fetch` has not yet resolved
-   - When: IssuesPage renders
-   - Then: skeleton pulse elements are visible; no issue cards are shown yet
-
-2. **renders issue list after data loads**
-   - Given: `fetch` resolves with two issues: "Login button broken" and "Dark mode feature"
-   - When: component finishes loading
-   - Then: "Issues" heading, both issue titles, and "New Issue" button are visible
+2. **renders issue cards after data loads**
+   - Mock `fetch` to return two issues: "Login button broken" (open/high/bug) and "Dark mode feature" (in_progress/medium/feature)
+   - Assert both `[data-testid="issue-card"]` elements visible
+   - Assert issue titles in the document
 
 3. **client-side search filters visible issues**
-   - Given: two issues loaded
-   - When: "Login" is typed into the search input
-   - Then: only "Login button broken" is visible; "Dark mode feature" is not visible
+   - Mock `fetch` with two issues loaded
+   - Type "Login" into `input[placeholder="Search issues..."]`
+   - Assert only "Login button broken" card visible; "Dark mode feature" not visible
 
-4. **shows empty state when no issues exist**
-   - Given: `fetch` resolves with `{ data: [], pagination: { total: 0, ... } }`
-   - When: component renders
-   - Then: "No issues found" text is visible; no issue cards are in the DOM
+4. **shows "No issues found" message when list is empty**
+   - Mock `fetch` to return `{ data: [], pagination: { total: 0, page: 1, pageSize: 20, totalPages: 0 } }`
+   - Assert "No issues found" text visible
+   - Assert no `[data-testid="issue-card"]`
 
-5. **opens create issue dialog on New Issue click**
-   - Given: issue list has loaded
-   - When: "New Issue" button is clicked
-   - Then: "Report New Issue" dialog heading appears with title input, "Create Issue" button, and "Cancel" button
+5. **opens create issue dialog when New Issue button clicked**
+   - Mock `fetch` with issues data (and `/api/projects` mock for the dialog)
+   - Click `[data-testid="create-issue-btn"]`
+   - Assert dialog "Report New Issue" heading visible
+   - Assert `#issue-title` input present
 
-6. **submits new issue form and refreshes list**
-   - Given: create issue dialog is open and "My Bug Report" is typed in the title field
-   - When: "Create Issue" is clicked and `fetch` POST resolves `{ ok: true }`
-   - Then: `fetch` is called with POST to `/api/issues` with body containing `title: "My Bug Report"`; dialog closes; GET is called again
+6. **create issue dialog has submit button inside a form (structural assertion)**
+   - Open create dialog
+   - Get submit button by role with name `/create issue/i`
+   - Assert `type="submit"`
+   - Assert `closest("form")` not null
+   - Assert `document.getElementById("issue-title")` has `name="title"` — Pattern 7
 
-7. **shows error state when fetch fails**
-   - Given: `fetch` rejects with a network error
-   - When: component renders
-   - Then: "Error loading issues" message is visible
+7. **clicking issue card opens detail dialog**
+   - Mock `fetch` with one issue, click `[data-testid="issue-card"]`
+   - Assert dialog showing issue title is visible
 
----
+8. **status filter select renders with all status options**
+   - Assert Radix Select trigger exists for status (first combobox)
+   - Assert "All Status", "Open", "In Progress", "Resolved", "Closed" option texts accessible
 
-## Notes
+9. **severity filter select renders with all severity options**
+   - Assert "All Severity", "Low", "Medium", "High", "Critical" option texts accessible
 
-- Status and severity filters use server-side filtering via the `usePagination` hook params.
-  In unit tests, verify the component has the filter controls but don't test server behavior.
-- The detail dialog (click issue to view) can be tested by mocking click interaction and
-  verifying the dialog renders the clicked issue's title.
+10. **shows error state when fetch rejects**
+    - Mock `fetch` to throw
+    - Assert "Error loading issues" is visible

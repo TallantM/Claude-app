@@ -1,83 +1,53 @@
-# Projects — Unit Test Specification
+# Unit Tests — projects
 
-## Test Suite Overview
-
-**Test File**: `tests/unit/projects-page.test.tsx`
-**What We're Testing**: ProjectsPage React component in isolation
-**Test Type**: Unit Tests (Vitest + React Testing Library)
-**Framework**: `describe("ProjectsPage", () => { ... })`
-
-### Purpose
-Validate that the ProjectsPage renders correctly, handles search input, opens/closes the
-create dialog, calls the API correctly on form submit, and handles loading/error states —
-all without a real server.
-
----
-
-## Test Configuration
-
-**Environment**: jsdom
-**Mocks Required**:
-- `global.fetch` → mock `/api/projects` GET and POST
-- `next/navigation` → mock `useRouter`
-- `@/hooks/use-pagination` → either mock the hook directly or mock `fetch` to return paginated data
-
-**Mock API Response** (for GET /api/projects):
-```json
-{
-  "data": [
-    { "id": "1", "name": "Alpha Project", "key": "AP", "status": "active",
-      "taskCount": 5, "openIssues": 2, "description": "First project", "teamName": null }
-  ],
-  "pagination": { "total": 1, "page": 1, "pageSize": 10, "totalPages": 1 }
-}
-```
-
----
-
-## Test Scenarios
-
-1. **shows loading skeleton while data is fetching**
-   - Given: `fetch` has not yet resolved
-   - When: ProjectsPage renders
-   - Then: animated skeleton pulse divs are visible; no project cards are shown yet
+1. **shows loading skeleton while fetch is pending**
+   - Mock `fetch` with never-resolving promise
+   - Render `ProjectsPage`
+   - Assert animate-pulse skeleton elements are visible
+   - Assert no `[data-testid="project-card"]` is rendered
 
 2. **renders project cards after data loads**
-   - Given: `fetch` for `/api/projects` resolves with one project: "Alpha Project"
-   - When: component finishes loading
-   - Then: "Projects" heading, a card containing "Alpha Project", and "New Project" button are all visible
+   - Mock `fetch` to return `{ data: [{ id: "1", name: "Alpha Project", key: "AP", status: "active", taskCount: 5, openIssues: 2 }], pagination: { total: 1, page: 1, pageSize: 10, totalPages: 1 } }`
+   - Assert `[data-testid="project-card"]` is visible
+   - Assert text "Alpha Project" is in the document
 
-3. **shows empty state when no projects exist**
-   - Given: `fetch` resolves with `{ data: [], pagination: { total: 0, ... } }`
-   - When: component renders
-   - Then: "No projects found" message and "Create Project" button inside the empty state are visible
+3. **shows empty state when no projects returned**
+   - Mock `fetch` to return `{ data: [], pagination: { total: 0, page: 1, pageSize: 10, totalPages: 0 } }`
+   - Assert `[data-testid="empty-state"]` is visible
+   - Assert "No projects found" text is shown
 
-4. **opens create project dialog on button click**
-   - Given: page has loaded with projects
-   - When: "New Project" button is clicked
-   - Then: a dialog with "Create New Project" heading, Project Name input, and "Create Project" submit button appears
+4. **opens create project dialog when New Project button is clicked**
+   - Mock `fetch` with one project
+   - Click `[data-testid="new-project-btn"]`
+   - Assert dialog with "Create New Project" heading is visible
+   - Assert `#name` input is in the document
 
-5. **closes dialog and resets form on Cancel**
-   - Given: create project dialog is open
-   - When: "Cancel" button is clicked
-   - Then: dialog is no longer visible and name input is removed from the DOM
+5. **create project dialog has submit button inside a form (structural assertion)**
+   - Mock `fetch` with one project, open dialog
+   - Get the submit button by role `button` with name `/create project/i`
+   - Assert `submitBtn.getAttribute("type") === "submit"`
+   - Assert `submitBtn.closest("form")` is not null
+   - Assert `document.getElementById("name")` has attribute `name="name"` — Pattern 7
 
-6. **submits new project form and refreshes list**
-   - Given: dialog is open and "My Test Project" is typed in the name field
-   - When: "Create Project" is clicked and `fetch` POST resolves with `{ ok: true }`
-   - Then: `fetch` is called with POST to `/api/projects` with body containing `name: "My Test Project"`; dialog closes; data re-fetches
+6. **closes dialog on Cancel click**
+   - Open dialog, click Cancel button
+   - Assert dialog is not visible
+   - Assert "Create New Project" heading is absent
 
-7. **shows error state when fetch fails**
-   - Given: `fetch` rejects with a network error
-   - When: component renders
-   - Then: "Error loading projects" message is visible
+7. **search input is present and bound**
+   - Mock `fetch` with projects
+   - Assert `input[placeholder="Search projects..."]` is in the document
+   - Type into the input — assert value changes
 
----
+8. **status filter select is rendered with correct options**
+   - Assert Radix Select trigger with "All Statuses" option text is present
 
-## Notes
+9. **shows error state when fetch rejects**
+   - Mock `fetch` to throw `new Error("Server error")`
+   - Assert "Error loading projects" is visible
 
-- The `usePagination` hook wraps `fetch` — mock `fetch` rather than the hook.
-- Auto-generated project key from name (via `generateKey`) doesn't need direct testing here;
-  it's a utility function that can be tested in a separate utils test.
-- Search filtering is server-side; unit tests verify the input exists and is bound,
-  not that server filtering happens.
+10. **clicking project card navigates to /projects/{id}**
+    - Mock `useRouter` with `push: vi.fn()`
+    - Mock `fetch` with one project (id: "1")
+    - Click `[data-testid="project-card"]`
+    - Assert `router.push("/projects/1")` called

@@ -1,89 +1,51 @@
-# Authentication — Unit Test Specification
+# Unit Tests — authentication
 
-## Test Suite Overview
+1. **renders login form with email, password fields and Sign in button**
+   - Render `LoginPage`
+   - Assert `#email`, `#password`, and `button[type="submit"]` with text "Sign in" are present
+   - Assert no `[role="alert"]` is visible
 
-**Test File**: `tests/unit/login-page.test.tsx`
-**What We're Testing**: LoginPage React component behavior in isolation
-**Test Type**: Unit Tests (Vitest + React Testing Library)
-**Framework**: `describe("LoginPage", () => { ... })`
+2. **submits credentials to signIn with correct arguments**
+   - Mock `signIn` to return `{ error: null }`
+   - Type `tester@sdlchub.com` / `test1234`, click Submit
+   - Assert `signIn` called with `"credentials"`, `{ email, password, redirect: false }`
 
-### Purpose
-Validate that the LoginPage component renders correctly, handles user input,
-calls `signIn` with the right arguments, shows errors on failure, and
-navigates on success — all without a real browser or server.
+3. **shows "Invalid email or password" when signIn returns an error**
+   - Mock `signIn` to return `{ error: "CredentialsSignin" }`
+   - Submit valid credentials
+   - Assert `[role="alert"]:not(#__next-route-announcer__)` contains "Invalid email or password"
 
----
+4. **redirects to /dashboard and calls router.refresh on success**
+   - Mock `signIn` to return `{ error: null }`
+   - Mock `useRouter` with `{ push: vi.fn(), refresh: vi.fn() }`
+   - Submit credentials
+   - Assert `router.push("/dashboard")` and `router.refresh()` called
 
-## Test Configuration
+5. **disables submit button and shows spinner while login is in progress**
+   - Mock `signIn` with a never-resolving promise
+   - Submit form
+   - Assert submit button is disabled and Loader2 spinner is in the document
 
-**Environment**: jsdom (simulated browser)
-**Mocks Required**:
-- `next-auth/react` → mock `signIn` function
-- `next/navigation` → mock `useRouter` (provide `{ push: vi.fn(), refresh: vi.fn() }`)
+6. **renders register form with name, email, password, confirmPassword fields**
+   - Render `RegisterPage`
+   - Assert `#name`, `#email`, `#password`, `#confirmPassword` inputs and "Create account" button are present
 
----
+7. **calls POST /api/auth/register with correct body on valid submission**
+   - Mock `fetch` to return `{ ok: true }`
+   - Fill all fields with valid data and submit
+   - Assert `fetch` called with `"/api/auth/register"`, method POST, body containing name/email/password
 
-## Test Scenarios: LoginPage
+8. **redirects to /login?registered=true after successful registration**
+   - Mock `fetch` to return `{ ok: true }`
+   - Mock `useRouter` with `{ push: vi.fn() }`
+   - Submit valid registration form
+   - Assert `router.push("/login?registered=true")` called
 
-1. **renders the login form with all expected elements**
-   - Given: LoginPage is rendered with no user interaction
-   - Then: email input, password input, "Sign in" button, GitHub + Google OAuth buttons, "Sign up" link, and no error alert are all visible
+9. **shows server error message when registration API returns error**
+   - Mock `fetch` to return `{ ok: false, json: async () => ({ error: "Email already in use" }) }`
+   - Submit valid form
+   - Assert `[role="alert"]:not(#__next-route-announcer__)` contains "Email already in use"
 
-2. **submits credentials to signIn on form submission**
-   - Given: email "user@example.com" and password "password123" are typed
-   - When: "Sign in" button is clicked
-   - Then: `signIn` is called with `"credentials"`, `email`, `password`, and `redirect: false`
-
-3. **shows error message when signIn returns an error**
-   - Given: `signIn` resolves with `{ error: "CredentialsSignin" }`
-   - When: form is submitted
-   - Then: `role="alert"` element with "Invalid email or password" is visible
-
-4. **redirects to dashboard on successful login**
-   - Given: `signIn` resolves with `{ error: null }`
-   - When: form is submitted
-   - Then: `router.push("/dashboard")` and `router.refresh()` are called
-
-5. **disables submit button while login is in progress**
-   - Given: `signIn` is a slow promise (not yet resolved)
-   - When: form is submitted
-   - Then: submit button is disabled and Loader2 spinner is visible inside it
-
----
-
-## Test Suite Overview
-
-**Test File**: `tests/unit/register-page.test.tsx`
-**What We're Testing**: RegisterPage React component
-**Framework**: `describe("RegisterPage", () => { ... })`
-
-### Mocks Required
-- `next/navigation` → mock `useRouter`
-- `global.fetch` → mock the `/api/auth/register` POST request
-
----
-
-## Test Scenarios: RegisterPage
-
-1. **renders all registration form fields**
-   - Given: RegisterPage is rendered with no interaction
-   - Then: Full Name, Email, Password, Confirm Password inputs, "Create account" button, and "Sign in" link are all visible
-
-2. **redirects to login after successful registration**
-   - Given: `fetch` resolves with `{ ok: true }`
-   - When: form filled with valid data and submitted
-   - Then: `router.push("/login?registered=true")` is called
-
-3. **shows error when API returns an error**
-   - Given: `fetch` resolves with `{ ok: false, body: { error: "Email already exists" } }`
-   - When: form is submitted
-   - Then: `role="alert"` element with "Email already exists" is visible
-
----
-
-## Notes
-
-- React Hook Form validation (Zod) runs client-side before fetch — invalid email formats
-  will show inline field errors rather than the global alert.
-- Do not test Zod validation itself — that's covered by the validations unit.
-- Focus on: render, submit behavior, error display, success navigation.
+10. **shows register link on login page and login link on register page**
+    - Render `LoginPage` — assert `a[href="/register"]` is present
+    - Render `RegisterPage` — assert `a[href="/login"]` is present
