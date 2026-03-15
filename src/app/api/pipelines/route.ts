@@ -11,14 +11,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const projectId = searchParams.get("projectId");
 
-    if (!projectId) {
-      return NextResponse.json(
-        { error: "projectId is required" },
-        { status: 400 }
-      );
-    }
-
-    const where = { projectId: projectId.trim() };
+    const where = projectId ? { projectId: projectId.trim() } : {};
     const paginationParams = parsePaginationParams(searchParams);
     const [total, pipelines] = await Promise.all([
       prisma.pipeline.count({ where }),
@@ -27,6 +20,16 @@ export async function GET(request: Request) {
         include: {
           _count: {
             select: { runs: true },
+          },
+          runs: {
+            orderBy: { startedAt: "desc" },
+            take: 5,
+          },
+          stages: {
+            orderBy: { order: "asc" },
+          },
+          project: {
+            select: { id: true, name: true, key: true },
           },
         },
         orderBy: { updatedAt: "desc" },

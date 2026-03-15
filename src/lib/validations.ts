@@ -39,7 +39,10 @@ export const taskSchema = z.object({
   status: z.enum(["todo", "in_progress", "in_review", "done"]).default("todo"),
   priority: z.enum(["low", "medium", "high", "critical"]).default("medium"),
   type: z.enum(["task", "story", "bug", "epic"]).default("task"),
-  storyPoints: z.number().int().min(0).max(100).optional(),
+  storyPoints: z.preprocess(
+    (val) => (val === "" || (typeof val === "number" && isNaN(val)) ? undefined : val),
+    z.number().int().min(0).max(100).optional()
+  ),
   dueDate: z.string().optional(),
   assigneeId: z.string().optional(),
   sprintId: z.string().optional(),
