@@ -143,7 +143,7 @@ export default function TeamPage() {
           ))}
         </div>
       ) : users.length === 0 ? (
-        <Card>
+        <Card data-testid="empty-state">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Users className="h-12 w-12 text-muted-foreground" />
             <p className="mt-4 text-lg font-medium">No team members yet</p>
@@ -155,7 +155,7 @@ export default function TeamPage() {
           {users.map((user, idx) => {
             const rc = roleConfig[user.role] || roleConfig.viewer;
             return (
-              <Card key={user.id} className="transition-shadow hover:shadow-md">
+              <Card key={user.id} className="transition-shadow hover:shadow-md" data-testid="member-card">
                 <CardContent className="flex flex-col items-center p-6 text-center">
                   <Avatar className={`h-16 w-16 ${avatarColors[idx % avatarColors.length]}`}>
                     <AvatarFallback className="text-lg font-bold text-white bg-transparent">

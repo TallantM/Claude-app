@@ -209,7 +209,7 @@ export default function ReposPage() {
             Manage your connected Git repositories
           </p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
+        <Button onClick={() => setDialogOpen(true)} data-testid="connect-repo-btn">
           <Plus className="h-4 w-4 mr-2" />
           Connect Repository
         </Button>
@@ -217,7 +217,7 @@ export default function ReposPage() {
 
       {/* Repos Grid */}
       {repos.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-64 border rounded-lg border-dashed">
+        <div className="flex flex-col items-center justify-center h-64 border rounded-lg border-dashed" data-testid="empty-state">
           <FolderGit2 className="h-12 w-12 text-muted-foreground mb-4" />
           <h3 className="text-lg font-medium">No repositories connected</h3>
           <p className="text-muted-foreground text-sm mt-1">
@@ -232,7 +232,7 @@ export default function ReposPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {repos.map((repo) => (
-            <Card key={repo.id}>
+            <Card key={repo.id} data-testid="repo-card">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="space-y-1 flex-1 min-w-0">

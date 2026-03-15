@@ -162,7 +162,7 @@ export default function PipelinesPage() {
 
       {/* Pipelines Grid */}
       {pipelines.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-64 border rounded-lg border-dashed">
+        <div className="flex flex-col items-center justify-center h-64 border rounded-lg border-dashed" data-testid="empty-state">
           <Play className="h-12 w-12 text-muted-foreground mb-4" />
           <h3 className="text-lg font-medium">No pipelines configured</h3>
           <p className="text-muted-foreground text-sm mt-1">
@@ -176,7 +176,7 @@ export default function PipelinesPage() {
             const lastRun = pipeline.runs[0];
 
             return (
-              <Card key={pipeline.id} className="flex flex-col">
+              <Card key={pipeline.id} className="flex flex-col" data-testid="pipeline-card">
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="space-y-1 flex-1">

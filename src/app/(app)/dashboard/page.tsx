@@ -31,12 +31,12 @@ interface DashboardData {
 // ─── Config ───
 
 const statCards = [
-  { key: "totalProjects" as const, label: "Total Projects", icon: FolderKanban, color: "text-primary" },
-  { key: "totalTasks" as const, label: "Total Tasks", icon: CheckSquare, color: "text-foreground" },
-  { key: "completedTasks" as const, label: "Completed Tasks", icon: CheckCircle, color: "text-green-600 dark:text-green-400" },
-  { key: "openIssues" as const, label: "Open Issues", icon: Bug, color: "text-orange-600 dark:text-orange-400" },
-  { key: "activeSprints" as const, label: "Active Sprints", icon: Zap, color: "text-purple-600 dark:text-purple-400" },
-  { key: "teamMembers" as const, label: "Team Members", icon: Users, color: "text-blue-600 dark:text-blue-400" },
+  { key: "totalProjects" as const, label: "Total Projects", icon: FolderKanban, color: "text-primary", testId: "stat-card-projects" },
+  { key: "totalTasks" as const, label: "Total Tasks", icon: CheckSquare, color: "text-foreground", testId: "stat-card-tasks" },
+  { key: "completedTasks" as const, label: "Completed Tasks", icon: CheckCircle, color: "text-green-600 dark:text-green-400", testId: "stat-card-completed-tasks" },
+  { key: "openIssues" as const, label: "Open Issues", icon: Bug, color: "text-orange-600 dark:text-orange-400", testId: "stat-card-issues" },
+  { key: "activeSprints" as const, label: "Active Sprints", icon: Zap, color: "text-purple-600 dark:text-purple-400", testId: "stat-card-sprints" },
+  { key: "teamMembers" as const, label: "Team Members", icon: Users, color: "text-blue-600 dark:text-blue-400", testId: "stat-card-team" },
 ];
 
 const taskStatusConfig = [
@@ -67,15 +67,15 @@ function getActivityIcon(type: string) {
 /** Placeholder pulse skeleton matching the stat cards + two-column grid layout. */
 function LoadingSkeleton() {
   return (
-    <div className="animate-pulse space-y-6">
+    <div className="space-y-6">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="h-28 rounded-lg bg-muted" />
+          <div key={i} className="h-28 rounded-lg bg-muted animate-pulse" />
         ))}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="h-96 rounded-lg bg-muted" />
-        <div className="h-96 rounded-lg bg-muted" />
+        <div className="h-96 rounded-lg bg-muted animate-pulse" />
+        <div className="h-96 rounded-lg bg-muted animate-pulse" />
       </div>
     </div>
   );
@@ -95,7 +95,7 @@ export default function DashboardPage() {
         const res = await fetch("/api/dashboard");
         if (!res.ok) throw new Error("Failed to fetch dashboard data");
         const json = await res.json();
-        setData(json);
+        setData(json.data ?? json);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
       } finally {
@@ -138,8 +138,8 @@ export default function DashboardPage() {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        {statCards.map(({ key, label, icon: Icon, color }) => (
-          <Card key={key}>
+        {statCards.map(({ key, label, icon: Icon, color, testId }) => (
+          <Card key={key} data-testid={testId}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{label}</CardTitle>
               <Icon className={`h-4 w-4 ${color}`} />
@@ -154,7 +154,7 @@ export default function DashboardPage() {
       {/* Bottom Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Activity */}
-        <Card>
+        <Card data-testid="activity-feed">
           <CardHeader>
             <CardTitle className="text-lg">Recent Activity</CardTitle>
           </CardHeader>
@@ -212,7 +212,7 @@ export default function DashboardPage() {
                 const percentage = (count / maxTaskCount) * 100;
 
                 return (
-                  <div key={status} className="space-y-1.5">
+                  <div key={status} className="space-y-1.5" data-testid={`task-dist-${status.replace(/_/g, '-')}`}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Badge className={getStatusColor(status)}>
@@ -233,7 +233,7 @@ export default function DashboardPage() {
             </div>
             <div className="mt-6 pt-4 border-t">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Tasks</span>
+                <span className="text-muted-foreground">Total Tasks</span>
                 <span className="font-semibold">{data.stats.totalTasks}</span>
               </div>
               <div className="flex items-center justify-between text-sm mt-1">

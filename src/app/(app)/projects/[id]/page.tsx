@@ -133,6 +133,7 @@ function TaskCard({
   return (
     <Card
       className="cursor-pointer hover:shadow-md transition-shadow mb-2"
+      data-testid="task-card"
       onClick={() => onTaskClick(task)}
     >
       <CardContent className="p-3">
@@ -261,7 +262,16 @@ export default function ProjectDetailPage() {
       const res = await fetch(`/api/projects/${projectId}`);
       if (!res.ok) throw new Error("Failed to fetch project");
       const json = await res.json();
-      setData(json.data);
+      // API returns the project directly (not wrapped in { data }), with tasks and sprints nested
+      const raw = json.data ?? json;
+      if (raw.project) {
+        // Already in expected shape { project, tasks, sprints }
+        setData(raw);
+      } else {
+        // Reshape: extract tasks and sprints from the project object
+        const { tasks, sprints, ...projectFields } = raw;
+        setData({ project: projectFields, tasks: tasks ?? [], sprints: sprints ?? [] });
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
@@ -358,6 +368,7 @@ export default function ProjectDetailPage() {
           variant="ghost"
           size="icon"
           onClick={() => router.push("/projects")}
+          data-testid="back-to-projects"
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
@@ -390,7 +401,7 @@ export default function ProjectDetailPage() {
         <TabsContent value="board">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
             {columns.map((column) => (
-              <div key={column.id} className="flex flex-col">
+              <div key={column.id} className="flex flex-col" data-testid={`kanban-col-${column.id.replace(/_/g, '-')}`}>
                 <div className="flex items-center justify-between mb-3 px-1">
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold text-sm">{column.title}</h3>

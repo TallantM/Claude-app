@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Search, Bug } from "lucide-react";
@@ -80,21 +80,7 @@ export default function IssuesPage() {
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [projects, setProjects] = useState<{ id: string; name: string; key: string }[]>([]);
-  const [projectId, setProjectId] = useState("");
-
-  // Lazy-load projects the first time the create dialog opens so the page
-  // avoids an extra network request on every mount.
-  useEffect(() => {
-    if (!newDialogOpen || projects.length > 0) return;
-    fetch("/api/projects?pageSize=100")
-      .then((r) => r.json())
-      .then((json) => {
-        const list: { id: string; name: string; key: string }[] = json.data ?? [];
-        setProjects(list);
-        if (list.length > 0) setProjectId(list[0].id);
-      })
-      .catch(() => {});
-  }, [newDialogOpen, projects.length]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
 
   const serverParams = useMemo(
     () => ({ status: statusFilter, severity: severityFilter }),
@@ -133,13 +119,33 @@ export default function IssuesPage() {
     },
   });
 
+  // Load projects when the new issue dialog opens
+  const handleOpenNewDialog = async () => {
+    setNewDialogOpen(true);
+    if (projects.length === 0) {
+      try {
+        const res = await fetch("/api/projects?pageSize=100");
+        if (res.ok) {
+          const json = await res.json();
+          const projectList = (json.data ?? json) as { id: string; name: string; key: string }[];
+          setProjects(projectList);
+          if (projectList.length > 0 && !selectedProjectId) {
+            setSelectedProjectId(projectList[0].id);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+  };
+
   const onSubmit = async (data: IssueInput) => {
     try {
       setSubmitting(true);
       const res = await fetch("/api/issues", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...data, projectId }),
+        body: JSON.stringify({ ...data, projectId: selectedProjectId }),
       });
       if (!res.ok) throw new Error("Failed to create issue");
       setNewDialogOpen(false);
@@ -186,7 +192,7 @@ export default function IssuesPage() {
           <h1 className="text-3xl font-bold tracking-tight">Issues</h1>
           <p className="text-muted-foreground">Track and resolve bugs and issues</p>
         </div>
-        <Button onClick={() => setNewDialogOpen(true)}>
+        <Button onClick={handleOpenNewDialog} data-testid="create-issue-btn">
           <Plus className="h-4 w-4 mr-2" />
           New Issue
         </Button>
@@ -255,6 +261,7 @@ export default function IssuesPage() {
             <Card
               key={issue.id}
               className="cursor-pointer hover:shadow-sm transition-shadow"
+              data-testid="issue-card"
               onClick={() => handleIssueClick(issue)}
             >
               <CardContent className="p-4">
@@ -445,22 +452,6 @@ export default function IssuesPage() {
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label>Project</Label>
-              <Select value={projectId} onValueChange={setProjectId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a project" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.key} — {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="issue-title">Title</Label>
               <Input
                 id="issue-title"
@@ -473,6 +464,27 @@ export default function IssuesPage() {
                 </p>
               )}
             </div>
+
+            {projects.length > 0 && (
+              <div className="space-y-2">
+                <Label htmlFor="issue-project">Project</Label>
+                <Select
+                  value={selectedProjectId}
+                  onValueChange={setSelectedProjectId}
+                >
+                  <SelectTrigger id="issue-project">
+                    <SelectValue placeholder="Select project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projects.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.key} - {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="issue-desc">Description</Label>

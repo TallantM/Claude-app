@@ -89,6 +89,7 @@ export default function SettingsPage() {
                   <Label htmlFor="name">Full Name</Label>
                   <Input
                     id="name"
+                    data-testid="profile-name-input"
                     value={profileName}
                     onChange={(e) => setProfileName(e.target.value)}
                     placeholder="Your name"

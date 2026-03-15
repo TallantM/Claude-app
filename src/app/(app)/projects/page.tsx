@@ -147,7 +147,7 @@ export default function ProjectsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
           <p className="text-muted-foreground">Manage your software projects</p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
+        <Button onClick={() => setDialogOpen(true)} data-testid="new-project-btn">
           <Plus className="h-4 w-4 mr-2" />
           New Project
         </Button>
@@ -179,7 +179,7 @@ export default function ProjectsPage() {
 
       {/* Projects Grid */}
       {filteredProjects.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-64 border rounded-lg border-dashed">
+        <div className="flex flex-col items-center justify-center h-64 border rounded-lg border-dashed" data-testid="empty-state">
           <FolderKanban className="h-12 w-12 text-muted-foreground mb-4" />
           <h3 className="text-lg font-medium">No projects found</h3>
           <p className="text-muted-foreground text-sm mt-1">
@@ -200,6 +200,7 @@ export default function ProjectsPage() {
             <Card
               key={project.id}
               className="cursor-pointer hover:shadow-md transition-shadow"
+              data-testid="project-card"
               onClick={() => router.push(`/projects/${project.id}`)}
             >
               <CardHeader className="pb-3">
