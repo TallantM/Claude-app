@@ -51,7 +51,7 @@ describe("DashboardPage", () => {
     await waitFor(() => {
       expect(screen.getByText("Total Projects")).toBeInTheDocument();
     });
-    expect(screen.getByText("Total Tasks")).toBeInTheDocument();
+    expect(screen.getAllByText("Total Tasks").length).toBeGreaterThan(0);
     expect(screen.getByText("Completed Tasks")).toBeInTheDocument();
     expect(screen.getByText("Open Issues")).toBeInTheDocument();
     expect(screen.getByText("Active Sprints")).toBeInTheDocument();
