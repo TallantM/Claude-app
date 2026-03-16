@@ -10,6 +10,7 @@ import {
   XCircle,
   CheckCheck,
   Inbox,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -47,8 +48,14 @@ export default function NotificationsPage() {
     url: "/api/notifications",
   });
 
-  // Local optimistic state for read status
+  // Local optimistic state for read/deleted status
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+  const [allCleared, setAllCleared] = useState(false);
+
+  const visibleNotifications = allCleared
+    ? []
+    : notifications.filter((n) => !deletedIds.has(n.id));
 
   const markAsRead = async (id: string) => {
     await fetch("/api/notifications", {
@@ -68,8 +75,23 @@ export default function NotificationsPage() {
     setReadIds(new Set(notifications.map((n) => n.id)));
   };
 
+  const deleteNotification = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    await fetch(`/api/notifications/${id}`, { method: "DELETE" });
+    setDeletedIds((prev) => new Set(prev).add(id));
+  };
+
+  const clearAll = async () => {
+    await fetch("/api/notifications", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clearAll: true }),
+    });
+    setAllCleared(true);
+  };
+
   const isRead = (n: Notification) => n.read || readIds.has(n.id);
-  const unreadCount = notifications.filter((n) => !isRead(n)).length;
+  const unreadCount = visibleNotifications.filter((n) => !isRead(n)).length;
 
   return (
     <div className="space-y-6">
@@ -81,11 +103,18 @@ export default function NotificationsPage() {
             {unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}
           </p>
         </div>
-        {unreadCount > 0 && (
-          <Button variant="outline" onClick={markAllAsRead}>
-            <CheckCheck className="mr-2 h-4 w-4" /> Mark all as read
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {unreadCount > 0 && (
+            <Button variant="outline" onClick={markAllAsRead}>
+              <CheckCheck className="mr-2 h-4 w-4" /> Mark all as read
+            </Button>
+          )}
+          {visibleNotifications.length > 0 && (
+            <Button variant="outline" onClick={clearAll}>
+              <Trash2 className="mr-2 h-4 w-4" /> Clear all
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Notifications List */}
@@ -105,7 +134,7 @@ export default function NotificationsPage() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {notifications.map((notification) => {
+          {visibleNotifications.map((notification) => {
             const Icon = typeIcons[notification.type] || Bell;
             return (
               <div
@@ -139,9 +168,20 @@ export default function NotificationsPage() {
                     {notification.message}
                   </p>
                 </div>
-                <span className="shrink-0 text-xs text-muted-foreground">
-                  {formatRelativeTime(notification.createdAt)}
-                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs text-muted-foreground">
+                    {formatRelativeTime(notification.createdAt)}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                    onClick={(e) => deleteNotification(notification.id, e)}
+                    aria-label="Delete notification"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
             );
           })}

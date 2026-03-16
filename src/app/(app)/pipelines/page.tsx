@@ -12,11 +12,20 @@ import {
   Circle,
   ChevronDown,
   ChevronUp,
+  Trash2,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { getStatusColor, formatRelativeTime } from "@/lib/utils";
 import { usePagination } from "@/hooks/use-pagination";
 import { Pagination } from "@/components/ui/pagination";
@@ -105,6 +114,8 @@ function LoadingSkeleton() {
 export default function PipelinesPage() {
   const [expandedPipeline, setExpandedPipeline] = useState<string | null>(null);
   const [triggeringId, setTriggeringId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const {
     data: pipelines,
@@ -135,6 +146,20 @@ export default function PipelinesPage() {
 
   const toggleExpanded = (pipelineId: string) => {
     setExpandedPipeline((prev) => (prev === pipelineId ? null : pipelineId));
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try {
+      setDeleting(true);
+      await fetch(`/api/pipelines/${deleteId}`, { method: "DELETE" });
+      setDeleteId(null);
+      refetch();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (loading) return <LoadingSkeleton />;
@@ -194,9 +219,20 @@ export default function PipelinesPage() {
                         </CardDescription>
                       )}
                     </div>
-                    <Badge className={getStatusColor(pipeline.status)}>
-                      {pipeline.status}
-                    </Badge>
+                    <div className="flex items-center gap-1">
+                      <Badge className={getStatusColor(pipeline.status)}>
+                        {pipeline.status}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                        onClick={(e) => { e.stopPropagation(); setDeleteId(pipeline.id); }}
+                        aria-label="Delete pipeline"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className="flex-1">
@@ -351,6 +387,24 @@ export default function PipelinesPage() {
           onPageSizeChange={setPageSize}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Delete Pipeline</DialogTitle>
+            <DialogDescription>
+              This will permanently delete this pipeline and all its run history. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteId(null)}>Cancel</Button>
+            <Button variant="destructive" disabled={deleting} onClick={handleDelete}>
+              {deleting ? "Deleting..." : "Delete Pipeline"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
