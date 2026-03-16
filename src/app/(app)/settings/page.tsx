@@ -2,8 +2,8 @@
 
 import { useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
-import { useState } from "react";
-import { User, Palette, Shield, Moon, Sun, Monitor, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { User, Palette, Shield, Moon, Sun, Monitor, Loader2, CheckCircle, XCircle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,23 +17,83 @@ import { cn } from "@/lib/utils";
 // ─── Main Page ───
 
 export default function SettingsPage() {
-  const { data: session } = useSession();
+  const { data: session, update: updateSession } = useSession();
   const { theme, setTheme } = useTheme();
-  const [saving, setSaving] = useState(false);
-  const [profileName, setProfileName] = useState(session?.user?.name || "");
+
+  const [profileName, setProfileName] = useState("");
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileMessage, setProfileMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Sync profile name when session resolves (session loads async — Pattern 18)
+  useEffect(() => {
+    if (session?.user?.name) {
+      setProfileName(session.user.name);
+    }
+  }, [session?.user?.name]);
 
   const handleSaveProfile = async () => {
-    setSaving(true);
-    // TODO: wire up to PATCH /api/users/me when backend supports it
-    await new Promise((r) => setTimeout(r, 500));
-    setSaving(false);
+    if (!profileName.trim()) return;
+    setProfileSaving(true);
+    setProfileMessage(null);
+    try {
+      const res = await fetch("/api/users/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: profileName.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setProfileMessage({ type: "error", text: data.error || "Failed to save profile" });
+      } else {
+        await updateSession({ name: data.name });
+        setProfileMessage({ type: "success", text: "Profile updated successfully" });
+      }
+    } catch {
+      setProfileMessage({ type: "error", text: "Something went wrong. Please try again." });
+    } finally {
+      setProfileSaving(false);
+    }
   };
 
-  // Theme picker options — each gets a card-style button
+  const handleUpdatePassword = async () => {
+    setPasswordMessage(null);
+    if (newPassword !== confirmPassword) {
+      setPasswordMessage({ type: "error", text: "New passwords do not match" });
+      return;
+    }
+    if (newPassword.length < 8) {
+      setPasswordMessage({ type: "error", text: "New password must be at least 8 characters" });
+      return;
+    }
+    setPasswordSaving(true);
+    try {
+      const res = await fetch("/api/users/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPasswordMessage({ type: "error", text: data.error || "Failed to update password" });
+      } else {
+        setPasswordMessage({ type: "success", text: "Password updated successfully" });
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      }
+    } catch {
+      setPasswordMessage({ type: "error", text: "Something went wrong. Please try again." });
+    } finally {
+      setPasswordSaving(false);
+    }
+  };
+
   const themes = [
     { value: "light", label: "Light", icon: Sun },
     { value: "dark", label: "Dark", icon: Moon },
@@ -85,6 +145,12 @@ export default function SettingsPage() {
               </div>
               <Separator />
               <div className="grid gap-4 max-w-md">
+                {profileMessage && (
+                  <div className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${profileMessage.type === "error" ? "border-destructive/50 text-destructive bg-destructive/10" : "border-green-500/50 text-green-700 bg-green-50 dark:text-green-400 dark:bg-green-950"}`}>
+                    {profileMessage.type === "success" ? <CheckCircle className="h-4 w-4 shrink-0" /> : <XCircle className="h-4 w-4 shrink-0" />}
+                    {profileMessage.text}
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="name">Full Name</Label>
                   <Input
@@ -105,8 +171,8 @@ export default function SettingsPage() {
                   />
                   <p className="text-xs text-muted-foreground">Email cannot be changed</p>
                 </div>
-                <Button onClick={handleSaveProfile} disabled={saving} className="w-fit">
-                  {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button onClick={handleSaveProfile} disabled={profileSaving} className="w-fit">
+                  {profileSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Save Changes
                 </Button>
               </div>
@@ -155,6 +221,12 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 max-w-md">
+                {passwordMessage && (
+                  <div className={`flex items-center gap-2 rounded-md border px-3 py-2 text-sm ${passwordMessage.type === "error" ? "border-destructive/50 text-destructive bg-destructive/10" : "border-green-500/50 text-green-700 bg-green-50 dark:text-green-400 dark:bg-green-950"}`}>
+                    {passwordMessage.type === "success" ? <CheckCircle className="h-4 w-4 shrink-0" /> : <XCircle className="h-4 w-4 shrink-0" />}
+                    {passwordMessage.text}
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="current-password">Current Password</Label>
                   <Input
@@ -185,7 +257,10 @@ export default function SettingsPage() {
                     placeholder="Confirm new password"
                   />
                 </div>
-                <Button className="w-fit">Update Password</Button>
+                <Button onClick={handleUpdatePassword} disabled={passwordSaving} className="w-fit">
+                  {passwordSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Update Password
+                </Button>
               </div>
             </CardContent>
           </Card>

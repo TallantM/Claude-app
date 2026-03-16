@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Search, Bug } from "lucide-react";
+import { Plus, Search, Bug, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,6 +79,8 @@ export default function IssuesPage() {
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [projects, setProjects] = useState<{ id: string; name: string; key: string }[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
 
@@ -161,6 +163,20 @@ export default function IssuesPage() {
   const handleIssueClick = (issue: Issue) => {
     setSelectedIssue(issue);
     setDetailDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    try {
+      setDeleting(true);
+      await fetch(`/api/issues/${deleteId}`, { method: "DELETE" });
+      setDeleteId(null);
+      refetch();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   // Client-side text search (status/severity are server-side filtered)
@@ -310,10 +326,19 @@ export default function IssuesPage() {
                       </span>
                     )}
                   </div>
-                  <div className="col-span-1">
+                  <div className="col-span-1 flex items-center justify-between gap-1">
                     <span className="text-xs text-muted-foreground">
                       {formatDate(issue.updatedAt)}
                     </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
+                      onClick={(e) => { e.stopPropagation(); setDeleteId(issue.id); }}
+                      aria-label="Delete issue"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -330,6 +355,24 @@ export default function IssuesPage() {
           onPageSizeChange={setPageSize}
         />
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteId} onOpenChange={(open) => { if (!open) setDeleteId(null); }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Delete Issue</DialogTitle>
+            <DialogDescription>
+              This will permanently delete this issue. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteId(null)}>Cancel</Button>
+            <Button variant="destructive" disabled={deleting} onClick={handleDelete}>
+              {deleting ? "Deleting..." : "Delete Issue"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Issue Detail Dialog */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
