@@ -13,6 +13,7 @@ import {
   SignalMedium,
   SignalHigh,
   Flame,
+  Calendar,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -73,6 +74,17 @@ interface ProjectData {
   project: ProjectDetail;
   tasks: TaskWithRelations[];
   sprints: SprintWithTasks[];
+}
+
+interface TeamMember {
+  id: string;
+  role: string;
+  user: {
+    id: string;
+    name: string | null;
+    email: string;
+    image: string | null;
+  };
 }
 
 // ─── Kanban Config ───
@@ -235,6 +247,25 @@ export default function ProjectDetailPage() {
   const [newTaskStatus, setNewTaskStatus] = useState<string>("todo");
   const [submitting, setSubmitting] = useState(false);
 
+  // ── Settings state ──
+  const [settingsName, setSettingsName] = useState("");
+  const [settingsDescription, setSettingsDescription] = useState("");
+  const [settingsStatus, setSettingsStatus] = useState("");
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsMessage, setSettingsMessage] = useState<string | null>(null);
+
+  // ── Sprint creation state ──
+  const [sprintDialogOpen, setSprintDialogOpen] = useState(false);
+  const [sprintName, setSprintName] = useState("");
+  const [sprintGoal, setSprintGoal] = useState("");
+  const [sprintStartDate, setSprintStartDate] = useState("");
+  const [sprintEndDate, setSprintEndDate] = useState("");
+  const [sprintSubmitting, setSprintSubmitting] = useState(false);
+
+  // ── Task detail — team members ──
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [teamLoaded, setTeamLoaded] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -267,10 +298,17 @@ export default function ProjectDetailPage() {
       if (raw.project) {
         // Already in expected shape { project, tasks, sprints }
         setData(raw);
+        setSettingsName(raw.project.name ?? "");
+        setSettingsDescription(raw.project.description ?? "");
+        setSettingsStatus(raw.project.status ?? "");
       } else {
         // Reshape: extract tasks and sprints from the project object
         const { tasks, sprints, ...projectFields } = raw;
-        setData({ project: projectFields, tasks: tasks ?? [], sprints: sprints ?? [] });
+        const shaped = { project: projectFields, tasks: tasks ?? [], sprints: sprints ?? [] };
+        setData(shaped);
+        setSettingsName(projectFields.name ?? "");
+        setSettingsDescription(projectFields.description ?? "");
+        setSettingsStatus(projectFields.status ?? "");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
@@ -282,6 +320,19 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     fetchProject();
   }, [fetchProject]);
+
+  const fetchTeamMembers = useCallback(async () => {
+    if (teamLoaded) return;
+    try {
+      const res = await fetch("/api/team");
+      if (!res.ok) return;
+      const json = await res.json();
+      setTeamMembers(json.data ?? []);
+      setTeamLoaded(true);
+    } catch {
+      // non-critical — silently ignore
+    }
+  }, [teamLoaded]);
 
   const handleStatusChange = async (taskId: string, newStatus: string) => {
     try {
@@ -319,12 +370,124 @@ export default function ProjectDetailPage() {
   const handleTaskClick = (task: TaskWithRelations) => {
     setSelectedTask(task);
     setTaskDialogOpen(true);
+    fetchTeamMembers();
   };
 
   const openNewTaskDialog = (status: string) => {
     setNewTaskStatus(status);
     setValue("status", status as TaskInput["status"]);
     setNewTaskDialogOpen(true);
+  };
+
+  // ── Settings save / cancel ──
+  const handleSettingsSave = async () => {
+    try {
+      setSettingsSaving(true);
+      setSettingsMessage(null);
+      const res = await fetch(`/api/projects/${projectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: settingsName,
+          description: settingsDescription,
+          status: settingsStatus,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to save settings");
+      setSettingsMessage("Settings saved successfully.");
+      fetchProject();
+    } catch (err) {
+      setSettingsMessage(err instanceof Error ? err.message : "Failed to save settings.");
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
+
+  const handleSettingsCancel = () => {
+    if (!data) return;
+    setSettingsName(data.project.name);
+    setSettingsDescription(data.project.description ?? "");
+    setSettingsStatus(data.project.status);
+    setSettingsMessage(null);
+  };
+
+  // ── Sprint creation ──
+  const handleCreateSprint = async () => {
+    if (!sprintName.trim()) return;
+    try {
+      setSprintSubmitting(true);
+      const res = await fetch("/api/sprints", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId,
+          name: sprintName,
+          goal: sprintGoal || undefined,
+          startDate: sprintStartDate || undefined,
+          endDate: sprintEndDate || undefined,
+        }),
+      });
+      if (!res.ok) throw new Error("Failed to create sprint");
+      setSprintDialogOpen(false);
+      setSprintName("");
+      setSprintGoal("");
+      setSprintStartDate("");
+      setSprintEndDate("");
+      fetchProject();
+    } catch (err) {
+      console.error("Error creating sprint:", err);
+    } finally {
+      setSprintSubmitting(false);
+    }
+  };
+
+  // ── Sprint status update ──
+  const handleSprintStatusChange = async (sprintId: string, newStatus: string) => {
+    try {
+      const res = await fetch(`/api/sprints/${sprintId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) throw new Error("Failed to update sprint");
+      fetchProject();
+    } catch (err) {
+      console.error("Error updating sprint:", err);
+    }
+  };
+
+  // ── Backlog sprint assignment ──
+  const handleBacklogSprintAssign = async (taskId: string, sprintId: string | null) => {
+    try {
+      const res = await fetch(`/api/projects/${projectId}/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sprintId: sprintId || null }),
+      });
+      if (!res.ok) throw new Error("Failed to assign sprint");
+      fetchProject();
+    } catch (err) {
+      console.error("Error assigning sprint:", err);
+    }
+  };
+
+  // ── Task detail field patches ──
+  const handleTaskFieldPatch = async (field: Record<string, unknown>) => {
+    if (!selectedTask) return;
+    try {
+      const res = await fetch(`/api/projects/${projectId}/tasks/${selectedTask.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(field),
+      });
+      if (!res.ok) throw new Error("Failed to update task");
+      const json = await res.json();
+      const updated: TaskWithRelations = json.data ?? json;
+      setSelectedTask(updated);
+      fetchProject();
+    } catch (err) {
+      console.error("Error updating task field:", err);
+    }
   };
 
   if (loading) return <LoadingSkeleton />;
@@ -359,6 +522,7 @@ export default function ProjectDetailPage() {
   }));
 
   const backlogTasks = tasks.filter((t) => !t.sprintId);
+  const activeSprints = sprints.filter((s) => s.status === "planned" || s.status === "active");
 
   return (
     <div className="space-y-6">
@@ -479,6 +643,27 @@ export default function ProjectDetailPage() {
                             </AvatarFallback>
                           </Avatar>
                         )}
+                        {/* Sprint assignment selector */}
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Select
+                            value={task.sprintId ?? "none"}
+                            onValueChange={(value) =>
+                              handleBacklogSprintAssign(task.id, value === "none" ? null : value)
+                            }
+                          >
+                            <SelectTrigger className="h-7 text-xs w-36">
+                              <SelectValue placeholder="No sprint" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">No sprint</SelectItem>
+                              {activeSprints.map((sprint) => (
+                                <SelectItem key={sprint.id} value={sprint.id}>
+                                  {sprint.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -491,6 +676,12 @@ export default function ProjectDetailPage() {
         {/* Sprints Tab */}
         <TabsContent value="sprints">
           <div className="mt-4 space-y-4">
+            <div className="flex justify-end">
+              <Button onClick={() => setSprintDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Sprint
+              </Button>
+            </div>
             {sprints.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-48 border rounded-lg border-dashed">
                 <p className="text-muted-foreground">No sprints yet</p>
@@ -511,9 +702,29 @@ export default function ProjectDetailPage() {
                           <CardDescription>{sprint.goal}</CardDescription>
                         )}
                       </div>
-                      <Badge className={getStatusColor(sprint.status)}>
-                        {sprint.status}
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge className={getStatusColor(sprint.status)}>
+                          {sprint.status}
+                        </Badge>
+                        {sprint.status === "planned" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleSprintStatusChange(sprint.id, "active")}
+                          >
+                            Start Sprint
+                          </Button>
+                        )}
+                        {sprint.status === "active" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleSprintStatusChange(sprint.id, "completed")}
+                          >
+                            Complete Sprint
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -571,7 +782,10 @@ export default function ProjectDetailPage() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Project Name</Label>
-                <Input defaultValue={project.name} />
+                <Input
+                  value={settingsName}
+                  onChange={(e) => setSettingsName(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Project Key</Label>
@@ -582,11 +796,14 @@ export default function ProjectDetailPage() {
               </div>
               <div className="space-y-2">
                 <Label>Description</Label>
-                <Textarea defaultValue={project.description ?? ""} />
+                <Textarea
+                  value={settingsDescription}
+                  onChange={(e) => setSettingsDescription(e.target.value)}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Status</Label>
-                <Select defaultValue={project.status}>
+                <Select value={settingsStatus} onValueChange={setSettingsStatus}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -597,10 +814,25 @@ export default function ProjectDetailPage() {
                   </SelectContent>
                 </Select>
               </div>
+              {settingsMessage && (
+                <p
+                  className={`text-sm ${
+                    settingsMessage.includes("success")
+                      ? "text-green-600"
+                      : "text-destructive"
+                  }`}
+                >
+                  {settingsMessage}
+                </p>
+              )}
               <Separator />
               <div className="flex justify-end gap-2">
-                <Button variant="outline">Cancel</Button>
-                <Button>Save Changes</Button>
+                <Button variant="outline" onClick={handleSettingsCancel}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSettingsSave} disabled={settingsSaving}>
+                  {settingsSaving ? "Saving..." : "Save Changes"}
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -637,14 +869,22 @@ export default function ProjectDetailPage() {
                   )}
                 </div>
 
-                {selectedTask.description && (
-                  <div>
-                    <Label className="text-xs text-muted-foreground">
-                      Description
-                    </Label>
-                    <p className="text-sm mt-1">{selectedTask.description}</p>
-                  </div>
-                )}
+                {/* Editable description */}
+                <div>
+                  <Label className="text-xs text-muted-foreground">
+                    Description
+                  </Label>
+                  <Textarea
+                    className="mt-1 text-sm"
+                    defaultValue={selectedTask.description ?? ""}
+                    placeholder="Add a description…"
+                    onBlur={(e) => {
+                      if (e.target.value !== (selectedTask.description ?? "")) {
+                        handleTaskFieldPatch({ description: e.target.value });
+                      }
+                    }}
+                  />
+                </div>
 
                 <Separator />
 
@@ -671,34 +911,60 @@ export default function ProjectDetailPage() {
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Editable assignee */}
                   <div>
                     <Label className="text-xs text-muted-foreground">
                       Assignee
                     </Label>
-                    {selectedTask.assignee ? (
-                      <div className="flex items-center gap-2 mt-1">
-                        <Avatar className="h-6 w-6">
-                          <AvatarImage
-                            src={selectedTask.assignee.image ?? undefined}
-                          />
-                          <AvatarFallback className="text-[10px]">
-                            {getInitials(selectedTask.assignee.name ?? "U")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span>{selectedTask.assignee.name}</span>
-                      </div>
-                    ) : (
-                      <p className="text-muted-foreground mt-1">Unassigned</p>
-                    )}
+                    <Select
+                      value={selectedTask.assignee?.id ?? "unassigned"}
+                      onValueChange={(value) =>
+                        handleTaskFieldPatch({ assigneeId: value === "unassigned" ? null : value })
+                      }
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue placeholder="Unassigned" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="unassigned">Unassigned</SelectItem>
+                        {teamMembers.map((member) => (
+                          <SelectItem key={member.user.id} value={member.user.id}>
+                            {member.user.name ?? member.user.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                  {selectedTask.dueDate && (
-                    <div>
-                      <Label className="text-xs text-muted-foreground">
-                        Due Date
-                      </Label>
-                      <p className="mt-1">{formatDate(selectedTask.dueDate)}</p>
+
+                  {/* Editable due date */}
+                  <div>
+                    <Label className="text-xs text-muted-foreground">
+                      Due Date
+                    </Label>
+                    <div className="flex items-center gap-1 mt-1">
+                      <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <Input
+                        type="date"
+                        className="h-8 text-sm"
+                        defaultValue={
+                          selectedTask.dueDate
+                            ? selectedTask.dueDate.substring(0, 10)
+                            : ""
+                        }
+                        onBlur={(e) => {
+                          const newVal = e.target.value || null;
+                          const currentVal = selectedTask.dueDate
+                            ? selectedTask.dueDate.substring(0, 10)
+                            : null;
+                          if (newVal !== currentVal) {
+                            handleTaskFieldPatch({ dueDate: newVal });
+                          }
+                        }}
+                      />
                     </div>
-                  )}
+                  </div>
+
                   <div>
                     <Label className="text-xs text-muted-foreground">
                       Created
@@ -847,6 +1113,78 @@ export default function ProjectDetailPage() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sprint Creation Dialog */}
+      <Dialog open={sprintDialogOpen} onOpenChange={setSprintDialogOpen}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>Create Sprint</DialogTitle>
+            <DialogDescription>
+              Define a new iteration for your project.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="sprint-name">Name *</Label>
+              <Input
+                id="sprint-name"
+                placeholder="Sprint 1"
+                value={sprintName}
+                onChange={(e) => setSprintName(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="sprint-goal">Goal</Label>
+              <Textarea
+                id="sprint-goal"
+                placeholder="What is the goal of this sprint?"
+                value={sprintGoal}
+                onChange={(e) => setSprintGoal(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="sprint-start">Start Date</Label>
+                <Input
+                  id="sprint-start"
+                  type="date"
+                  value={sprintStartDate}
+                  onChange={(e) => setSprintStartDate(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="sprint-end">End Date</Label>
+                <Input
+                  id="sprint-end"
+                  type="date"
+                  value={sprintEndDate}
+                  onChange={(e) => setSprintEndDate(e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSprintDialogOpen(false);
+                setSprintName("");
+                setSprintGoal("");
+                setSprintStartDate("");
+                setSprintEndDate("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateSprint}
+              disabled={sprintSubmitting || !sprintName.trim()}
+            >
+              {sprintSubmitting ? "Creating..." : "Create Sprint"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
